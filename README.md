@@ -94,7 +94,7 @@ Two rules worth knowing before you add code:
 
 ```bash
 # .env.local — admin is disabled entirely unless BOTH are set
-ADMIN_PASSWORD=at-least-twelve-characters
+ADMIN_PASSWORD=at-least-nine-characters
 AUTH_SECRET=$(openssl rand -hex 32)
 ```
 

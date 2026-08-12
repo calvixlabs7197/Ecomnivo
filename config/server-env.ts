@@ -21,8 +21,15 @@ const schema = z.object({
    * role-based access control when the database is introduced. It is read from
    * the environment and never hardcoded (§15), and admin is simply unavailable
    * when it is unset.
+   *
+   * The floor is nine characters, lowered from twelve on the owner's decision.
+   * It is a length check, not a strength one — the real defences are elsewhere:
+   * the login form is throttled to 8 attempts per 15 minutes, every failure
+   * returns one identical message, and the comparison is constant-time. A short
+   * password still costs you most of the margin those buy, so a long random one
+   * remains the right choice for anything public.
    */
-  ADMIN_PASSWORD: z.string().min(12).optional(),
+  ADMIN_PASSWORD: z.string().min(9).optional(),
 
   /** HMAC key for the session cookie. Must be long and random. */
   AUTH_SECRET: z.string().min(32).optional(),
@@ -50,7 +57,7 @@ export function adminConfigProblem(): string | null {
   if (adminEnabled) return null;
 
   const missing: string[] = [];
-  if (!serverEnv.ADMIN_PASSWORD) missing.push("ADMIN_PASSWORD (at least 12 characters)");
+  if (!serverEnv.ADMIN_PASSWORD) missing.push("ADMIN_PASSWORD (at least 9 characters)");
   if (!serverEnv.AUTH_SECRET) missing.push("AUTH_SECRET (at least 32 characters)");
 
   return `Admin is disabled. Set ${missing.join(" and ")} in .env.local and restart.`;
