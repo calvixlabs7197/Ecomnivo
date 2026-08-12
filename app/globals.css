@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   EcomNivo design tokens
+   ---------------------------------------------------------------------------
+   One font family. Three radii. Two shadows. A restrained palette. The
+   restraint is the design — every value here has to justify itself, and new
+   tokens need a reason, not a preference.
+
+   Naming: page/surface/ink/rule reads naturally as Tailwind utilities
+   (bg-page, text-ink, border-rule) and keeps semantic intent visible at the
+   call site instead of a raw grey number.
+
+   Single (light) theme by design — see docs/ARCHITECTURE.md §0 decision 9.
+   Every colour is already a token, so dark mode is a token swap, not a
+   refactor.
+   =========================================================================== */
+
+@theme {
+  /* --- surfaces --------------------------------------------------------- */
+  --color-page: #ffffff;
+  --color-surface: #f9fafb;
+  --color-surface-strong: #f3f4f6;
+
+  /* --- text ------------------------------------------------------------- */
+  --color-ink: #111827;
+  --color-muted: #6b7280;
+
+  /* --- lines ------------------------------------------------------------ */
+  --color-rule: #e5e7eb;
+  --color-rule-strong: #d1d5db;
+
+  /* --- brand ------------------------------------------------------------ */
+  --color-brand: #2563eb;
+  --color-brand-hover: #1d4ed8;
+  --color-brand-tint: #eff6ff;
+
+  /* --- semantic state (never used as decoration) ------------------------ */
+  /*
+   * These are darkened from the brief's suggested palette (#16A34A / #F59E0B
+   * / #DC2626) because those values do not meet WCAG AA as text:
+   *
+   *            on #FFF   on #F9FAFB
+   *   #16A34A   3.30       3.15      <- fails 4.5:1 for normal text
+   *   #F59E0B   2.15       2.06      <- fails badly
+   *   #DC2626   4.83       4.62      <- passes on our two surfaces
+   *
+   * Every use of these tokens in this product is text or a border, and a
+   * calculator that colours a profit figure green owes the reader a green
+   * they can actually read. The hues are unchanged — only the lightness.
+   *
+   *   #15803D  4.80 on surface   #B45309  4.81   #B91C1C  6.19
+   */
+  --color-positive: #15803d;
+  --color-caution: #b45309;
+  --color-critical: #b91c1c;
+
+  /* --- type ------------------------------------------------------------- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+
+  --text-display: 3rem;
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.025em;
+  --text-display--font-weight: 700;
+
+  --text-h1: 2.25rem;
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h1--font-weight: 700;
+
+  --text-h2: 1.75rem;
+  --text-h2--line-height: 1.25;
+  --text-h2--letter-spacing: -0.015em;
+  --text-h2--font-weight: 600;
+
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.4;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h3--font-weight: 600;
+
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.6;
+
+  --text-eyebrow: 0.8125rem;
+  --text-eyebrow--line-height: 1.4;
+  --text-eyebrow--letter-spacing: 0.06em;
+  --text-eyebrow--font-weight: 500;
+
+  /* --- shape ------------------------------------------------------------ */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(17 24 39 / 0.05);
+  --shadow-md: 0 4px 12px -2px rgb(17 24 39 / 0.08);
+
+  /* --- layout ----------------------------------------------------------- */
+  --container-page: 75rem; /* 1200px — max-w-page */
+  --container-reading: 68ch; /* comfortable measure — max-w-reading */
+
+  /* --- motion ----------------------------------------------------------- */
+  --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings set their own measure; balance keeps ragged last lines short. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* One focus treatment, applied everywhere, never removed. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-tint);
+    color: var(--color-brand-hover);
+  }
+
+  /* Native marker removed on <details> so the Accordion can supply its own. */
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Skip link: off-screen until focused, then pinned top-left. */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+  }
+
+  .skip-link:focus {
+    left: 0.5rem;
+    top: 0.5rem;
+  }
+}
