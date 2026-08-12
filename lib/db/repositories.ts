@@ -41,6 +41,18 @@ export async function upsertToolRecord(record: ToolRecord): Promise<void> {
   });
 }
 
+/**
+ * Drops the overrides for a tool.
+ *
+ * Nothing is lost: the calculator, its copy and its SEO defaults all live in
+ * code, and removing the record is how an admin says "go back to those".
+ */
+export async function deleteToolRecord(slug: string): Promise<void> {
+  await updateCollection<ToolRecord[]>("tools", [], (current) =>
+    current.filter((record) => record.slug !== slug),
+  );
+}
+
 // --- guides ------------------------------------------------------------------
 
 export async function listGuideRecords(): Promise<GuideRecord[]> {
@@ -97,12 +109,23 @@ export async function listCategoryRecords(): Promise<CategoryRecord[]> {
   return readCollection<CategoryRecord[]>("categories", []);
 }
 
+export async function getCategoryRecord(slug: string): Promise<CategoryRecord | undefined> {
+  return (await listCategoryRecords()).find((record) => record.slug === slug);
+}
+
 export async function upsertCategoryRecord(record: CategoryRecord): Promise<void> {
   await updateCollection<CategoryRecord[]>("categories", [], (current) => {
     const next = current.filter((existing) => existing.slug !== record.slug);
     next.push({ ...record, updatedAt: new Date().toISOString() });
     return next.sort((a, b) => a.sortOrder - b.sortOrder);
   });
+}
+
+/** Restores a category to its code defaults. */
+export async function deleteCategoryRecord(slug: string): Promise<void> {
+  await updateCollection<CategoryRecord[]>("categories", [], (current) =>
+    current.filter((record) => record.slug !== slug),
+  );
 }
 
 // --- settings ----------------------------------------------------------------

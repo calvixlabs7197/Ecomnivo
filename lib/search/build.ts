@@ -1,5 +1,5 @@
 import "server-only";
-import { categories } from "@/config/categories";
+import { resolveCategories } from "@/lib/categories/resolve";
 import { listPublishedTools } from "@/lib/tools/resolve";
 import { listIndexableGuides } from "@/lib/content/guides";
 import type { SearchDoc } from "@/lib/search";
@@ -19,7 +19,11 @@ import type { SearchDoc } from "@/lib/search";
  * route. It is not that yet.
  */
 export async function buildSearchIndex(): Promise<SearchDoc[]> {
-  const [tools, guides] = await Promise.all([listPublishedTools(), listIndexableGuides()]);
+  const [tools, guides, categories] = await Promise.all([
+    listPublishedTools(),
+    listIndexableGuides(),
+    resolveCategories(),
+  ]);
 
   const toolDocs: SearchDoc[] = tools.map((tool) => {
     const category = categories.find((candidate) => candidate.slug === tool.category);

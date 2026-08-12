@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Route } from "next";
 
-import { categories } from "@/config/categories";
+import { requireRole } from "@/lib/auth/guards";
+import { resolveCategories } from "@/lib/categories/resolve";
 import { getTool } from "@/lib/tools/catalog";
 import { getToolRecord } from "@/lib/db/repositories";
 import { getToolContent } from "@/lib/tools/registry";
+import { resetTool, saveTool } from "@/actions/admin";
+import { relativeTime } from "@/lib/admin/format";
+import { Badge } from "@/components/ui/badge";
 import { SaveForm } from "@/components/admin/save-form";
-import { saveTool } from "@/actions/admin";
+import { PageHeader } from "@/components/admin/ui";
 import {
   CheckboxField,
   FormSection,
@@ -16,26 +21,45 @@ import {
 } from "@/components/admin/form-fields";
 
 export default async function EditToolPage({ params }: PageProps<"/admin/tools/[slug]">) {
+  await requireRole("admin");
+
   const { slug } = await params;
   const tool = getTool(slug);
   const content = getToolContent(slug);
 
   if (!tool) notFound();
 
-  const record = await getToolRecord(slug);
+  const [record, categories] = await Promise.all([getToolRecord(slug), resolveCategories()]);
   const related = record?.relatedTools?.length
     ? record.relatedTools
     : (content?.relatedTools ?? []);
+  const isLive = record?.isPublished ?? tool.status === "live";
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Link href="/admin/tools" className="text-sm text-brand hover:text-brand-hover">
-          &larr; All tools
-        </Link>
-        <h1 className="mt-2 text-h2">{tool.name}</h1>
-        <p className="mt-1 font-mono text-sm text-muted">/tools/{tool.slug}</p>
-      </div>
+      <PageHeader
+        title={record?.name ?? tool.name}
+        back={{ href: "/admin/tools", label: "All calculators" }}
+        meta={
+          <>
+            <span className="font-mono">/tools/{tool.slug}</span>
+            {isLive ? <Badge tone="positive">Live</Badge> : <Badge tone="caution">Hidden</Badge>}
+            <span>
+              {record ? `Edited ${relativeTime(record.updatedAt)}` : "Using built-in copy"}
+            </span>
+          </>
+        }
+        actions={
+          isLive ? (
+            <Link
+              href={`/tools/${tool.slug}` as Route}
+              className="text-sm font-medium text-brand hover:text-brand-hover"
+            >
+              View page
+            </Link>
+          ) : null
+        }
+      />
 
       <SaveForm action={saveTool}>
         <input type="hidden" name="slug" value={tool.slug} />
@@ -91,7 +115,7 @@ export default async function EditToolPage({ params }: PageProps<"/admin/tools/[
           <CheckboxField
             label="Published"
             name="isPublished"
-            defaultChecked={record?.isPublished ?? tool.status === "live"}
+            defaultChecked={isLive}
             help="Unpublishing removes the tool from listings, search and the sitemap. Nothing is deleted."
           />
           <CheckboxField
@@ -114,6 +138,23 @@ export default async function EditToolPage({ params }: PageProps<"/admin/tools/[
           />
         </FormSection>
       </SaveForm>
+
+      {record ? (
+        <form action={resetTool} className="border-t border-rule pt-6">
+          <input type="hidden" name="slug" value={tool.slug} />
+          <p className="max-w-reading text-sm leading-relaxed text-muted">
+            This calculator has admin overrides. Resetting discards them and goes back to the
+            name, description and SEO written alongside the code. The calculator itself is
+            untouched either way.
+          </p>
+          <button
+            type="submit"
+            className="mt-3 rounded-md border border-critical/30 px-3 py-2 text-sm font-medium text-critical transition-colors duration-150 ease-soft hover:bg-critical/5"
+          >
+            Reset to built-in copy
+          </button>
+        </form>
+      ) : null}
     </div>
   );
 }

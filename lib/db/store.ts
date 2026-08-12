@@ -1,5 +1,6 @@
 import "server-only";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 
 /**
@@ -106,6 +107,61 @@ export async function readCollection<T>(collection: string, fallback: T): Promis
  */
 export async function writeCollection<T>(collection: string, value: T): Promise<void> {
   return enqueue(() => writeAtomically(collection, value));
+}
+
+export interface CollectionStat {
+  collection: string;
+  exists: boolean;
+  bytes: number;
+  updatedAt: string | null;
+}
+
+/**
+ * What is actually on disk, for the system-status screen.
+ *
+ * Reported rather than inferred: "guides.json, 14 KB, written 20 minutes ago"
+ * is checkable, and a collection that is missing is shown as missing instead
+ * of as an empty list, because those two states have very different causes.
+ */
+export async function collectionStats(
+  collections: readonly string[],
+): Promise<CollectionStat[]> {
+  return Promise.all(
+    collections.map(async (collection) => {
+      try {
+        const info = await stat(filePath(collection));
+        return {
+          collection,
+          exists: true,
+          bytes: info.size,
+          updatedAt: info.mtime.toISOString(),
+        };
+      } catch {
+        return { collection, exists: false, bytes: 0, updatedAt: null };
+      }
+    }),
+  );
+}
+
+/**
+ * Whether saving would work here, asked without saving anything.
+ *
+ * A permission check on the directory, not a probe write: a status screen that
+ * writes a file every time it is opened is a status screen that changes what it
+ * is reporting on. It answers the one question that matters on serverless
+ * hosting — will the next Save succeed.
+ */
+export async function storeWritable(): Promise<boolean> {
+  for (const directory of [DATA_DIR, process.cwd()]) {
+    try {
+      await access(directory, fsConstants.W_OK);
+      return true;
+    } catch {
+      // The data directory may simply not exist yet; fall through to the
+      // parent, and only report unwritable when neither accepts a write.
+    }
+  }
+  return false;
 }
 
 /** Read-modify-write as one queued operation, so concurrent saves cannot race. */

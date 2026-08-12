@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { ArrowRight } from "lucide-react";
-import { categories } from "@/config/categories";
+import { resolveCategories } from "@/lib/categories/resolve";
 import { Card } from "@/components/ui/card";
 
 /**
@@ -10,8 +10,11 @@ import { Card } from "@/components/ui/card";
  * Shared by the homepage and /categories so the two can never drift. Icons
  * carry the differentiation instead of four different accent colours — the
  * palette stays restrained and the cards still scan apart at a glance.
+ *
+ * The copy is resolved from the store rather than read from the config, so an
+ * admin rename shows up here and on the hub page at the same time.
  */
-export function CategoryGrid({
+export async function CategoryGrid({
   headingLevel = 3,
   counts,
 }: {
@@ -25,6 +28,7 @@ export function CategoryGrid({
   counts: Record<string, number>;
 }) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
+  const categories = await resolveCategories();
 
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

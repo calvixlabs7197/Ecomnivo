@@ -2,7 +2,7 @@
 
 *Smart Tools for Smarter E-commerce*
 
-**Status:** Approved. **Phases 1–4 and 7 complete** — 22 calculators, 3 guides, all legal pages, site search, and consent-gated analytics/ads/affiliate architecture. Phases 5–6 (auth, admin) deferred by decision until Supabase is introduced. See §10–§14 for what was actually built and where it deviated from this plan.
+**Status:** Approved. **Phases 1–4, 6 and 7 complete** — 22 calculators, 3 guides, all legal pages, site search, consent-gated analytics/ads/affiliate architecture, and an eleven-screen admin panel. Phase 5 (Supabase) remains deferred by decision; the admin runs against a local file store behind the repository interface Supabase will satisfy. See §10–§16 for what was actually built and where it deviated from this plan.
 **Date:** 2026-08-12
 
 ---
@@ -1264,8 +1264,59 @@ Admin **can** create brand new pages at any URL, which was the other half of the
 
 - **Supabase**: swap `lib/db/repositories.ts` and `lib/auth/*`. The migrations, RLS policies and role hook are already written.
 - **Roles**: the local session is always `super_admin`. The role model, ranking and guards are in place and used; multi-user roles need real accounts.
-- **Categories** are still code-defined. They are a fixed set of four that the tool catalog is typed against, so making them editable means widening `CategorySlug` from a union to a string — worth doing with Supabase, not before.
+- **Categories** are still code-defined. They are a fixed set of four that the tool catalog is typed against, so making them editable means widening `CategorySlug` from a union to a string — worth doing with Supabase, not before. *(Superseded by §16: the copy is now editable without widening the union.)*
 - **A safe formula builder**, as above.
+
+---
+
+## 16. Phase 6.1 — the admin, finished
+
+Completed 2026-08-13. Eleven screens, 372 tests, every route smoke-checked against a running server.
+
+Phase 6 shipped five screens that proved the store worked. This one turns that into something a person can run a site from: a real shell, screens for the things that were being done by hand, and — the substantial addition — the two screens that answer questions rather than edit records.
+
+### The shell
+
+`components/admin/shell.tsx` — a persistent sidebar on desktop, a drawer on mobile, a top bar that always names the current section. One nav declaration (`components/admin/nav.ts`) drives the sidebar, the drawer, the top bar and the dashboard's link grid, so a new screen appears in all four by adding a line.
+
+It is the only client component in the chrome, and it is one for three specific reasons: the active-link highlight, the drawer's open state, and Escape-to-close. Everything it wraps is still server-rendered.
+
+`minRole` on a nav item is a **display** rule. Every screen still calls `requireRole`, because hiding a link stops nobody who can type a URL.
+
+### List state lives in the URL
+
+Search and filters are `searchParams`, not React state. `/admin/guides?status=draft` is a link you can bookmark or send to a colleague, the back button works, and filtering happens on the server — so a list never ships every row to the browser just to hide most of them. `FilterBar` debounces typing to one navigation per query rather than one per keystroke.
+
+### The two screens that are not CRUD
+
+**SEO health** (`lib/seo/audit.ts` + `lib/admin/seo-report.ts`). Every published URL, graded on the tags the route will *actually serve* — after each fallback is applied, not on the field somebody left blank. A tool with no SEO title override is not missing a title; it is using the one written next to the calculator, and an audit that does not know that cries wolf on every row.
+
+The rules are a pure function over a list of subjects, so they are unit-tested with literal data rather than against a store. Findings name the fix, not the rule: "trim to 165 or fewer so the sentence finishes on screen", not "bad for SEO". Thresholds are display limits — where results truncate — and the screen says so, because a score of 100% means the tags are well-formed, not that the content is worth reading.
+
+**Search index.** Not a report about search — it *is* search, running the same `searchDocs` the visitor's browser runs, over the index built for this request. Typing a query shows the exact order a visitor would get, which is the only reliable way to answer "why doesn't my new guide come up for X".
+
+**System status** exists for one failure: the Save button that returns an error on a read-only host. It asks the filesystem whether a write would succeed — a permission check, not a probe write, because a status screen that writes a file changes what it is reporting on — and the dashboard and settings screens surface the same answer before you click anything.
+
+### Categories, without widening the union
+
+§15 assumed editable categories meant `CategorySlug` becoming a `string`. It does not. Splitting *what exists* from *how it reads* — the contract tools already use — gives the admin the whole content surface (name, tagline, description, icon, order, SEO) while the slug stays a checked union member and a route.
+
+So the screen edits and never creates. A category slug is a URL, a key every tool is filed under, and a compile-time constant; a fifth category is a code change the type system helps with, whereas one invented in a text field is a live URL with nothing in it. `z.enum(CATEGORY_SLUGS)` rejects anything else outright.
+
+The icon is admin-editable and therefore untrusted, so it resolves against an eleven-entry allow-list (`config/icons.ts`) rather than an arbitrary lookup into lucide — otherwise a text field decides which of a thousand components ships, and a typo renders nothing with no explanation.
+
+`resolveCategories` is wrapped in React `cache`, because a category name appears on every tool card and a listing page would otherwise read the same JSON file thirty times to render one grid.
+
+### Additions to the mutation set
+
+`setToolPublished` and the two reset actions follow the same `authorize → validate → mutate → audit → revalidate` five steps. A one-click control is still a mutation; the shortcut it must not take is any of the five.
+
+### Open items
+
+- **Supabase**, unchanged: swap `lib/db/repositories.ts` and `lib/auth/*`.
+- **User accounts.** The role model is real and enforced on every screen and mutation, but this instance has one shared password and issues `super_admin`. The Access screen says so in those words rather than implying accounts it does not have.
+- **A safe formula builder**, still the largest outstanding piece.
+- **Redirect management** was considered and left out: the proxy runs at the edge without filesystem access, so a store-backed redirect table cannot be applied there, and a half-working version that only covered single-segment paths would be worse than none.
 
 ---
 

@@ -1,93 +1,140 @@
 import Link from "next/link";
 import type { Route } from "next";
 
-import { listGuides, seedGuideSlugs } from "@/lib/content/guides";
-import { listGuideRecords } from "@/lib/db/repositories";
+import { listGuidesForAdmin } from "@/lib/content/guides";
+import { firstParam, matchesQuery, resultLabel } from "@/lib/admin/filters";
+import { formatDate, relativeTime } from "@/lib/admin/format";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
+import { FilterBar } from "@/components/admin/filter-bar";
+import {
+  DataTable,
+  EmptyState,
+  PageHeader,
+  Panel,
+  RowTitle,
+  Td,
+  Th,
+} from "@/components/admin/ui";
 
-export default async function AdminGuidesPage() {
-  const [published, records] = await Promise.all([listGuides(), listGuideRecords()]);
+export default async function AdminGuidesPage({ searchParams }: PageProps<"/admin/guides">) {
+  const params = await searchParams;
+  const query = firstParam(params.q);
+  const status = firstParam(params.status);
 
-  // Drafts are invisible to `listGuides`, so the admin list is the union: every
-  // record plus any built-in guide that has not been overridden yet.
-  const overridden = new Set(records.map((record) => record.slug));
-  const rows = [
-    ...records.map((record) => ({
-      slug: record.slug,
-      title: record.title,
-      status: record.status,
-      updatedAt: record.updatedAt,
-      isSeed: seedGuideSlugs.has(record.slug),
-    })),
-    ...published
-      .filter((guide) => !overridden.has(guide.slug))
-      .map((guide) => ({
-        slug: guide.slug,
-        title: guide.title,
-        status: "published" as const,
-        updatedAt: guide.updatedAt,
-        isSeed: true,
-      })),
-  ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const guides = await listGuidesForAdmin();
+
+  const rows = guides.filter((guide) => {
+    if (status && guide.status !== status) return false;
+    return matchesQuery(query, guide.title, guide.slug, guide.excerpt, guide.category);
+  });
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-h2">Guides</h1>
-          <p className="mt-2 text-muted">Write, schedule and publish. {rows.length} total.</p>
-        </div>
-        <Link href="/admin/guides/new" className={buttonStyles({ size: "sm" })}>
-          New guide
-        </Link>
-      </div>
+      <PageHeader
+        title="Guides"
+        description="Write, schedule and publish. A guide with a future publish date stays hidden until the date arrives, even when its status is published."
+        meta={
+          <span>
+            {guides.filter((guide) => guide.isVisible).length} live of {guides.length}
+          </span>
+        }
+        actions={
+          <Link href="/admin/guides/new" className={buttonStyles({ size: "sm" })}>
+            New guide
+          </Link>
+        }
+      />
 
-      <div className="overflow-x-auto rounded-lg border border-rule bg-page">
-        <table className="w-full min-w-[36rem] text-left text-sm">
-          <thead>
-            <tr className="border-b border-rule">
-              <th scope="col" className="px-4 py-3 font-semibold text-ink">Guide</th>
-              <th scope="col" className="px-4 py-3 font-semibold text-ink">Status</th>
-              <th scope="col" className="px-4 py-3 font-semibold text-ink">Updated</th>
-              <th scope="col" className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-rule">
-            {rows.map((row) => (
-              <tr key={row.slug}>
-                <td className="px-4 py-3">
-                  <span className="font-medium text-ink">{row.title}</span>
-                  <span className="mt-0.5 block font-mono text-xs text-muted">
-                    /guides/{row.slug}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {row.status === "published" ? (
-                    <Badge tone="brand">Published</Badge>
-                  ) : (
-                    <Badge>{row.status === "draft" ? "Draft" : "Scheduled"}</Badge>
-                  )}
-                  {row.isSeed ? (
-                    <span className="ml-2 text-xs text-muted">built-in</span>
-                  ) : null}
-                </td>
-                <td className="px-4 py-3 tabular-nums text-muted">
-                  {row.updatedAt.slice(0, 10)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/guides/${row.slug}` as Route}
-                    className="font-medium text-brand hover:text-brand-hover"
-                  >
-                    Edit
-                  </Link>
-                </td>
+      <Panel>
+        <FilterBar
+          searchPlaceholder="Search guides…"
+          resultLabel={resultLabel(rows.length, guides.length, "guide")}
+          selects={[
+            {
+              name: "status",
+              label: "Status",
+              options: [
+                { value: "published", label: "Published" },
+                { value: "draft", label: "Draft" },
+                { value: "scheduled", label: "Scheduled" },
+              ],
+            },
+          ]}
+        />
+
+        {rows.length === 0 ? (
+          <EmptyState
+            title="No guides match"
+            description="Nothing here matches these filters."
+            action={
+              <Link href="/admin/guides/new" className={buttonStyles({ size: "sm" })}>
+                New guide
+              </Link>
+            }
+          />
+        ) : (
+          <DataTable
+            head={
+              <>
+                <Th>Guide</Th>
+                <Th>Status</Th>
+                <Th>Published</Th>
+                <Th>Updated</Th>
+                <Th align="right">Actions</Th>
+              </>
+            }
+            minWidth="52rem"
+          >
+            {rows.map((guide) => (
+              <tr key={guide.slug}>
+                <Td>
+                  <RowTitle
+                    title={guide.title}
+                    path={`/guides/${guide.slug}`}
+                    href={`/admin/guides/${guide.slug}` as Route}
+                  />
+                </Td>
+                <Td>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {guide.status === "published" ? (
+                      <Badge tone={guide.isVisible ? "positive" : "caution"}>
+                        {guide.isVisible ? "Published" : "Awaiting date"}
+                      </Badge>
+                    ) : (
+                      <Badge tone="neutral">
+                        {guide.status === "draft" ? "Draft" : "Scheduled"}
+                      </Badge>
+                    )}
+                    {guide.isSeed ? <Badge tone="quiet">built-in</Badge> : null}
+                    {!guide.isIndexable ? <Badge tone="caution">noindex</Badge> : null}
+                  </div>
+                </Td>
+                <Td className="tabular-nums text-muted">{formatDate(guide.publishedAt)}</Td>
+                <Td className="text-muted">{relativeTime(guide.updatedAt)}</Td>
+                <Td align="right">
+                  <div className="flex items-center justify-end gap-3">
+                    {guide.isVisible ? (
+                      <Link
+                        href={`/guides/${guide.slug}` as Route}
+                        className="text-sm font-medium text-muted hover:text-ink"
+                      >
+                        View
+                      </Link>
+                    ) : null}
+                    <Link
+                      href={`/admin/guides/${guide.slug}` as Route}
+                      className="text-sm font-medium text-brand hover:text-brand-hover"
+                    >
+                      Edit
+                    </Link>
+                  </div>
+                </Td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </DataTable>
+        )}
+      </Panel>
     </div>
   );
 }

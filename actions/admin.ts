@@ -5,19 +5,24 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guards";
-import { CATEGORY_SLUGS } from "@/config/categories";
-import { getTool } from "@/lib/tools/catalog";
+import { CATEGORY_SLUGS, getCategory } from "@/config/categories";
+import { ICON_NAMES } from "@/config/icons";
+import { getTool, toolCatalog } from "@/lib/tools/catalog";
 import { seedGuideSlugs } from "@/lib/content/guides";
 import { seedPageSlugs } from "@/lib/content/pages";
 import { ReadOnlyStoreError } from "@/lib/db/store";
 import {
   defaultSettings,
+  deleteCategoryRecord,
   deleteGuideRecord,
   deletePageRecord,
+  deleteToolRecord,
   getGuideRecord,
   getPageRecord,
+  getToolRecord,
   logActivity,
   saveSettings,
+  upsertCategoryRecord,
   upsertGuideRecord,
   upsertPageRecord,
   upsertToolRecord,
@@ -147,6 +152,133 @@ export async function saveTool(_prev: ActionState, formData: FormData): Promise<
   revalidatePath("/", "layout");
 
   return { success: "Saved." };
+}
+
+/**
+ * Publish or hide a calculator from the list screen, without opening it.
+ *
+ * The same authorisation, audit and revalidation as the full save — a one-click
+ * control is still a mutation, and the shortcut it must not take is any of the
+ * five steps. A tool with no record yet gets one built from its code defaults,
+ * so toggling visibility never silently rewrites its name or category.
+ */
+export async function setToolPublished(formData: FormData) {
+  const session = await requireRole("admin");
+
+  const slug = String(formData.get("slug") ?? "");
+  const isPublished = formData.get("isPublished") === "true";
+
+  const tool = getTool(slug);
+  if (!tool) throw new Error(`No calculator exists with the slug "${slug}".`);
+
+  const existing = await getToolRecord(slug);
+  const index = toolCatalog.findIndex((candidate) => candidate.slug === slug);
+
+  await upsertToolRecord({
+    ...(existing ?? {
+      slug,
+      isFeatured: Boolean(tool.featured),
+      sortOrder: index < 0 ? 0 : index,
+    }),
+    slug,
+    isPublished,
+    updatedAt: new Date().toISOString(),
+  });
+
+  await logActivity({
+    actor: session.role,
+    action: isPublished ? "tool.publish" : "tool.unpublish",
+    entityType: "tool",
+    entityId: slug,
+    summary: `${isPublished ? "Published" : "Hid"} ${tool.name}`,
+  });
+
+  revalidatePath("/", "layout");
+}
+
+/** Drops every override, returning the tool to what the code says it is. */
+export async function resetTool(formData: FormData) {
+  const session = await requireRole("admin");
+  const slug = String(formData.get("slug") ?? "");
+
+  await deleteToolRecord(slug);
+  await logActivity({
+    actor: session.role,
+    action: "tool.reset",
+    entityType: "tool",
+    entityId: slug,
+    summary: `Reset ${slug} to its built-in copy`,
+  });
+
+  revalidatePath("/", "layout");
+  redirect("/admin/tools");
+}
+
+// --- categories ----------------------------------------------------------------
+
+const categorySchema = z.object({
+  slug: z.enum(CATEGORY_SLUGS),
+  name: z.string().trim().min(2),
+  tagline: z.string().trim().min(8),
+  description: z.string().trim().min(40, "The category page uses this as its intro."),
+  icon: z.enum(ICON_NAMES as [string, ...string[]]),
+  sortOrder: z.coerce.number().int().min(0).max(99),
+  seoTitle: optionalText,
+  seoDescription: optionalText,
+});
+
+/**
+ * Categories are edited, never created.
+ *
+ * The slug is a route, a `CategorySlug` union member and the key every tool is
+ * filed under, so `z.enum(CATEGORY_SLUGS)` rejects anything else outright.
+ * Adding a fifth category is a code change with a compiler to help; inventing
+ * one from a text field is a 404 waiting to be discovered by a crawler.
+ */
+export async function saveCategory(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await requireRole("admin");
+
+  const parsed = categorySchema.safeParse(fields(formData));
+  if (!parsed.success) return fail(parsed.error);
+  const data = parsed.data;
+
+  const failure = await commit(async () => {
+    await upsertCategoryRecord({ ...data, updatedAt: new Date().toISOString() });
+
+    await logActivity({
+      actor: session.role,
+      action: "category.update",
+      entityType: "category",
+      entityId: data.slug,
+      summary: `Updated category "${data.name}"`,
+    });
+  });
+
+  if (failure) return failure;
+
+  revalidatePath("/", "layout");
+
+  return { success: "Saved." };
+}
+
+export async function resetCategory(formData: FormData) {
+  const session = await requireRole("admin");
+  const slug = String(formData.get("slug") ?? "");
+
+  await deleteCategoryRecord(slug);
+  await logActivity({
+    actor: session.role,
+    action: "category.reset",
+    entityType: "category",
+    entityId: slug,
+    summary: `Reset "${getCategory(slug)?.name ?? slug}" to its built-in copy`,
+  });
+
+  revalidatePath("/", "layout");
+  redirect("/admin/categories");
 }
 
 // --- guides --------------------------------------------------------------------
@@ -359,7 +491,40 @@ const settingsSchema = z.object({
     .string()
     .trim()
     .transform((value) => (value === "" ? null : value)),
+  socials: z.string().optional(),
 });
+
+/**
+ * Parses the socials textarea: one `Label | https://…` per line.
+ *
+ * A repeating pair of fields would need client-side add/remove buttons, and
+ * this list is three entries long on its busiest day. Every URL must be
+ * absolute and https — these end up in the Organization `sameAs`, where a
+ * relative or broken link is a structured-data error rather than a bad link.
+ */
+function parseSocials(raw: string | undefined): {
+  socials: Array<{ label: string; href: string }>;
+  error?: string;
+} {
+  const lines = (raw ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
+  const socials: Array<{ label: string; href: string }> = [];
+
+  for (const line of lines) {
+    const [label, ...rest] = line.split("|");
+    const href = rest.join("|").trim();
+
+    if (!label?.trim() || !href) {
+      return { socials: [], error: `Each social line needs "Label | URL". Got: ${line}` };
+    }
+    if (!/^https:\/\/\S+$/.test(href)) {
+      return { socials: [], error: `Social URLs must start with https:// — got "${href}".` };
+    }
+
+    socials.push({ label: label.trim(), href });
+  }
+
+  return { socials };
+}
 
 export async function saveSiteSettings(
   _prev: ActionState,
@@ -370,8 +535,11 @@ export async function saveSiteSettings(
   const parsed = settingsSchema.safeParse(fields(formData));
   if (!parsed.success) return fail(parsed.error);
 
+  const { socials, error } = parseSocials(parsed.data.socials);
+  if (error) return { error };
+
   const failure = await commit(async () => {
-    await saveSettings({ ...defaultSettings(), ...parsed.data, socials: [] });
+    await saveSettings({ ...defaultSettings(), ...parsed.data, socials });
 
     await logActivity({
       actor: session.role,

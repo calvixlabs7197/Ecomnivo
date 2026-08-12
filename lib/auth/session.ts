@@ -7,10 +7,12 @@ export const SESSION_COOKIE = "ecomnivo_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 /**
- * Roles, matching the `app_role` enum in the Supabase migrations so the model
- * does not have to change when auth moves to the database.
+ * Roles live in `lib/auth/roles.ts` so client components can reason about them
+ * without importing this server-only module. Re-exported here because this is
+ * where callers expect to find them.
  */
-export type Role = "user" | "editor" | "admin" | "super_admin";
+export type { Role } from "@/lib/auth/roles";
+import type { Role } from "@/lib/auth/roles";
 
 export interface Session {
   sub: string;

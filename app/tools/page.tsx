@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { categories } from "@/config/categories";
+import { resolveCategories } from "@/lib/categories/resolve";
 import { listToolsByCategory, resolveTools } from "@/lib/tools/resolve";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { breadcrumbSchema, collectionPageSchema, type Crumb } from "@/lib/seo/jsonld";
@@ -28,6 +28,7 @@ const crumbs: Crumb[] = [
 export default async function ToolsPage() {
   const allTools = await resolveTools();
   const liveCount = allTools.filter((tool) => tool.status === "live").length;
+  const categories = await resolveCategories();
   const byCategory = await Promise.all(
     categories.map(async (category) => ({
       category,

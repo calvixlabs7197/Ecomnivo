@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { CATEGORY_SLUGS, getCategory } from "@/config/categories";
+import { CATEGORY_SLUGS } from "@/config/categories";
+import { resolveCategory } from "@/lib/categories/resolve";
 import { listToolsByCategory } from "@/lib/tools/resolve";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { breadcrumbSchema, collectionPageSchema, type Crumb } from "@/lib/seo/jsonld";
@@ -23,7 +24,7 @@ export async function generateMetadata({
   params,
 }: PageProps<"/categories/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const category = getCategory(slug);
+  const category = await resolveCategory(slug);
 
   if (!category) {
     return buildMetadata({
@@ -35,15 +36,16 @@ export async function generateMetadata({
   }
 
   return buildMetadata({
-    title: `${category.name} Calculators`,
-    description: category.description,
+    title: category.seoTitle ?? `${category.name} Calculators`,
+    absoluteTitle: Boolean(category.seoTitle),
+    description: category.seoDescription ?? category.description,
     path: `/categories/${category.slug}`,
   });
 }
 
 export default async function CategoryPage({ params }: PageProps<"/categories/[slug]">) {
   const { slug } = await params;
-  const category = getCategory(slug);
+  const category = await resolveCategory(slug);
 
   if (!category) notFound();
 

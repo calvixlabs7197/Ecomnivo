@@ -1,18 +1,11 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
-import { getSession, type Role, type Session } from "@/lib/auth/session";
-
-const RANK: Record<Role, number> = {
-  user: 0,
-  editor: 1,
-  admin: 2,
-  super_admin: 3,
-};
+import { getSession, type Session } from "@/lib/auth/session";
+import { roleAtLeast, type Role } from "@/lib/auth/roles";
 
 export function hasRole(session: Session | null, minimum: Role): boolean {
-  if (!session) return false;
-  return RANK[session.role] >= RANK[minimum];
+  return roleAtLeast(session?.role, minimum);
 }
 
 /**

@@ -65,6 +65,39 @@ export async function getGuide(slug: string): Promise<GuideDoc | undefined> {
   return (await listGuides()).find((guide) => guide.slug === slug);
 }
 
+export interface AdminGuide extends GuideDoc {
+  status: "draft" | "scheduled" | "published";
+  /** A guide that ships in code. Deleting an override restores it. */
+  isSeed: boolean;
+  /** Whether the public site is showing it right now. */
+  isVisible: boolean;
+}
+
+/**
+ * Everything the admin has to be able to see, drafts included.
+ *
+ * `listGuides` deliberately hides anything unpublished, which is right for the
+ * public site and useless for the screen whose job is to publish it. The union
+ * — every stored record, plus any built-in guide nobody has overridden — was
+ * being rebuilt in each admin screen that needed it, so it lives here once.
+ */
+export async function listGuidesForAdmin(): Promise<AdminGuide[]> {
+  const records = await listGuideRecords();
+  const overridden = new Set(records.map((record) => record.slug));
+
+  const fromStore: AdminGuide[] = records.map((record) => ({
+    ...record,
+    isSeed: seedGuideSlugs.has(record.slug),
+    isVisible: isVisible(record),
+  }));
+
+  const fromSeeds: AdminGuide[] = seeds
+    .filter((guide) => !overridden.has(guide.slug))
+    .map((guide) => ({ ...guide, status: "published", isSeed: true, isVisible: true }));
+
+  return [...fromStore, ...fromSeeds].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
 /** Indexable guides only — what belongs in the sitemap. */
 export async function listIndexableGuides(): Promise<GuideDoc[]> {
   return (await listGuides()).filter((guide) => guide.isIndexable);

@@ -40,6 +40,41 @@ export async function getPage(slug: string): Promise<PageDoc | undefined> {
   return (await listPages()).find((page) => page.slug === slug);
 }
 
+export interface AdminPage extends PageDoc {
+  isPublished: boolean;
+  /** A page that ships in code: editable, never deletable. */
+  isSeed: boolean;
+}
+
+/**
+ * Every page the admin can edit, unpublished ones included.
+ *
+ * `listPages` omits anything unpublished — correct for the site, wrong for the
+ * screen you use to publish it again.
+ */
+export async function listPagesForAdmin(): Promise<AdminPage[]> {
+  const records = await listPageRecords();
+  const overridden = new Set(records.map((record) => record.slug));
+
+  const fromStore: AdminPage[] = records.map((record) => ({
+    slug: record.slug,
+    title: record.title,
+    contentMd: record.contentMd,
+    seoTitle: record.seoTitle,
+    seoDescription: record.seoDescription,
+    updatedAt: record.updatedAt,
+    isIndexable: record.isIndexable,
+    isPublished: record.isPublished,
+    isSeed: seedPageSlugs.has(record.slug),
+  }));
+
+  const fromSeeds: AdminPage[] = seeds
+    .filter((page) => !overridden.has(page.slug))
+    .map((page) => ({ ...page, isPublished: true, isSeed: true }));
+
+  return [...fromStore, ...fromSeeds].sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
 /** Indexable pages only — what belongs in the sitemap. */
 export async function listIndexablePages(): Promise<PageDoc[]> {
   return (await listPages()).filter((page) => page.isIndexable !== false);

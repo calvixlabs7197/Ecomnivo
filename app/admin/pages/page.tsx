@@ -1,84 +1,146 @@
 import Link from "next/link";
 import type { Route } from "next";
 
-import { listPages, seedPageSlugs } from "@/lib/content/pages";
-import { listPageRecords } from "@/lib/db/repositories";
+import { listPagesForAdmin } from "@/lib/content/pages";
+import { firstParam, matchesQuery, resultLabel } from "@/lib/admin/filters";
+import { relativeTime } from "@/lib/admin/format";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
+import { FilterBar } from "@/components/admin/filter-bar";
+import {
+  DataTable,
+  EmptyState,
+  PageHeader,
+  Panel,
+  RowTitle,
+  Td,
+  Th,
+} from "@/components/admin/ui";
 
-export default async function AdminPagesPage() {
-  const [pages, records] = await Promise.all([listPages(), listPageRecords()]);
-  const recordsBySlug = new Map(records.map((record) => [record.slug, record]));
+export default async function AdminPagesPage({ searchParams }: PageProps<"/admin/pages">) {
+  const params = await searchParams;
+  const query = firstParam(params.q);
+  const type = firstParam(params.type);
+  const status = firstParam(params.status);
 
-  const rows = [
-    ...pages.map((page) => ({
-      slug: page.slug,
-      title: page.title,
-      updatedAt: page.updatedAt,
-      isSeed: seedPageSlugs.has(page.slug),
-      isPublished: recordsBySlug.get(page.slug)?.isPublished ?? true,
-    })),
-    // Unpublished records do not appear in listPages(), but must be editable.
-    ...records
-      .filter((record) => !record.isPublished)
-      .map((record) => ({
-        slug: record.slug,
-        title: record.title,
-        updatedAt: record.updatedAt,
-        isSeed: seedPageSlugs.has(record.slug),
-        isPublished: false,
-      })),
-  ].sort((a, b) => a.slug.localeCompare(b.slug));
+  const pages = await listPagesForAdmin();
+
+  const rows = pages.filter((page) => {
+    if (type === "builtin" && !page.isSeed) return false;
+    if (type === "custom" && page.isSeed) return false;
+    if (status === "published" && !page.isPublished) return false;
+    if (status === "hidden" && page.isPublished) return false;
+    return matchesQuery(query, page.title, page.slug);
+  });
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-h2">Pages</h1>
-          <p className="mt-2 max-w-reading text-muted">
-            About, the legal set, and any page you add. New pages are live at their URL as
-            soon as you save.
-          </p>
-        </div>
-        <Link href="/admin/pages/new" className={buttonStyles({ size: "sm" })}>
-          New page
-        </Link>
-      </div>
+      <PageHeader
+        title="Pages"
+        description="About, the legal set, and any page you add. A new page is live at its URL as soon as you save it — there is no rebuild in between."
+        meta={
+          <span>
+            {pages.filter((page) => page.isPublished).length} published of {pages.length}
+          </span>
+        }
+        actions={
+          <Link href="/admin/pages/new" className={buttonStyles({ size: "sm" })}>
+            New page
+          </Link>
+        }
+      />
 
-      <div className="overflow-x-auto rounded-lg border border-rule bg-page">
-        <table className="w-full min-w-[36rem] text-left text-sm">
-          <thead>
-            <tr className="border-b border-rule">
-              <th scope="col" className="px-4 py-3 font-semibold text-ink">Page</th>
-              <th scope="col" className="px-4 py-3 font-semibold text-ink">Type</th>
-              <th scope="col" className="px-4 py-3 font-semibold text-ink">Status</th>
-              <th scope="col" className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-rule">
-            {rows.map((row) => (
-              <tr key={row.slug}>
-                <td className="px-4 py-3">
-                  <span className="font-medium text-ink">{row.title}</span>
-                  <span className="mt-0.5 block font-mono text-xs text-muted">/{row.slug}</span>
-                </td>
-                <td className="px-4 py-3 text-muted">{row.isSeed ? "Built-in" : "Custom"}</td>
-                <td className="px-4 py-3">
-                  {row.isPublished ? <Badge tone="brand">Published</Badge> : <Badge>Hidden</Badge>}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/pages/${row.slug}` as Route}
-                    className="font-medium text-brand hover:text-brand-hover"
-                  >
-                    Edit
-                  </Link>
-                </td>
+      <Panel>
+        <FilterBar
+          searchPlaceholder="Search pages…"
+          resultLabel={resultLabel(rows.length, pages.length, "page")}
+          selects={[
+            {
+              name: "type",
+              label: "Type",
+              options: [
+                { value: "builtin", label: "Built-in" },
+                { value: "custom", label: "Custom" },
+              ],
+            },
+            {
+              name: "status",
+              label: "Status",
+              options: [
+                { value: "published", label: "Published" },
+                { value: "hidden", label: "Hidden" },
+              ],
+            },
+          ]}
+        />
+
+        {rows.length === 0 ? (
+          <EmptyState
+            title="No pages match"
+            description="Nothing here matches these filters."
+            action={
+              <Link href="/admin/pages/new" className={buttonStyles({ size: "sm" })}>
+                New page
+              </Link>
+            }
+          />
+        ) : (
+          <DataTable
+            head={
+              <>
+                <Th>Page</Th>
+                <Th>Type</Th>
+                <Th>Status</Th>
+                <Th>Updated</Th>
+                <Th align="right">Actions</Th>
+              </>
+            }
+            minWidth="48rem"
+          >
+            {rows.map((page) => (
+              <tr key={page.slug}>
+                <Td>
+                  <RowTitle
+                    title={page.title}
+                    path={`/${page.slug}`}
+                    href={`/admin/pages/${page.slug}` as Route}
+                  />
+                </Td>
+                <Td className="text-muted">{page.isSeed ? "Built-in" : "Custom"}</Td>
+                <Td>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {page.isPublished ? (
+                      <Badge tone="positive">Published</Badge>
+                    ) : (
+                      <Badge tone="caution">Hidden</Badge>
+                    )}
+                    {page.isIndexable === false ? <Badge tone="caution">noindex</Badge> : null}
+                  </div>
+                </Td>
+                <Td className="text-muted">{relativeTime(page.updatedAt)}</Td>
+                <Td align="right">
+                  <div className="flex items-center justify-end gap-3">
+                    {page.isPublished ? (
+                      <Link
+                        href={`/${page.slug}` as Route}
+                        className="text-sm font-medium text-muted hover:text-ink"
+                      >
+                        View
+                      </Link>
+                    ) : null}
+                    <Link
+                      href={`/admin/pages/${page.slug}` as Route}
+                      className="text-sm font-medium text-brand hover:text-brand-hover"
+                    >
+                      Edit
+                    </Link>
+                  </div>
+                </Td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </DataTable>
+        )}
+      </Panel>
     </div>
   );
 }

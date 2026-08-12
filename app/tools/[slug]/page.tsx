@@ -4,7 +4,7 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
-import { getCategory } from "@/config/categories";
+import { resolveCategory } from "@/lib/categories/resolve";
 import { getGuide, getGuidesForTool } from "@/lib/content/guides";
 import type { GuideDoc } from "@/lib/content/types";
 import { getTool } from "@/lib/tools/catalog";
@@ -68,7 +68,7 @@ export default async function ToolPage({ params }: PageProps<"/tools/[slug]">) {
 
   if (!summary || !content || !engine || summary.status !== "live") notFound();
 
-  const category = getCategory(summary.category);
+  const category = await resolveCategory(summary.category);
 
   const relatedSlugs = summary.relatedToolsOverride ?? content.relatedTools;
   const relatedTools = relatedSlugs

@@ -88,7 +88,7 @@ Two rules worth knowing before you add code:
 
 **Phase 7** — analytics, advertising and affiliate architecture. All three are **inert until configured**, and analytics additionally requires visitor consent. Phases 5 and 6 (auth, admin) were skipped by decision because both need Supabase.
 
-340 tests. **Next: Phase 8 — the security, SEO, performance and accessibility audits.**
+372 tests. **Next: Phase 8 — the security, SEO, performance and accessibility audits.**
 
 ### The admin panel
 
@@ -100,14 +100,23 @@ AUTH_SECRET=$(openssl rand -hex 32)
 
 Then sign in at `/login`. Admin lives at `/admin`.
 
-| Screen | What you can do |
-|---|---|
-| Dashboard | Counts, and the audit log |
-| Tools | Name, description, SEO title/description, category, publish, feature, sort order, related tools |
-| Guides | Full CRUD — Markdown body, draft / scheduled / published, SEO, indexability, related tools |
-| Pages | Edit the built-in pages **and create entirely new ones** at any URL |
-| Settings | Site name, tagline, description, contact email, SEO defaults, GA4 and ad client IDs |
-| Activity | Append-only log of every change |
+Eleven screens behind a sidebar, grouped as Overview, Content, Growth and System. Each one re-checks the role server-side; the sidebar only hides links the role cannot use.
+
+| Screen | Min role | What you can do |
+|---|---|---|
+| Dashboard | editor | Counts, SEO health score, changes-per-day, outstanding findings, recent activity |
+| Activity | editor | Append-only log of every change, grouped by day, filterable by type |
+| Calculators | admin | Name, description, SEO, category, publish, feature, sort order, related tools; publish/hide inline; reset to the built-in copy |
+| Guides | editor | Full CRUD — Markdown body, draft / scheduled / published, SEO, indexability, related tools |
+| Pages | editor | Edit the built-in pages **and create entirely new ones** at any URL |
+| Categories | admin | Rename the four hubs, rewrite their intro, pick the icon and the order |
+| SEO health | editor | Every published URL audited on the tags it will actually serve, with the fix named |
+| Search index | editor | Inspect what on-site search can find, and run a query exactly as a visitor would |
+| Settings | super_admin | Site name, tagline, description, contact email, SEO defaults, socials, GA4 and ad client IDs |
+| Access | admin | Role/permission matrix, your session, sign-in configuration, recent sign-ins |
+| System status | admin | Whether this host accepts writes, collection sizes, runtime and integration state |
+
+Every list screen keeps its search and filters in the URL, so `/admin/guides?status=draft` is a link you can bookmark or send to someone.
 
 Changes are live immediately — saving revalidates the affected pages, and new pages and guides are served by dynamic route params, so there is no rebuild between saving and seeing it.
 

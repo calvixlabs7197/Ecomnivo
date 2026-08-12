@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { ArrowRight } from "lucide-react";
 import type { ToolSummary } from "@/lib/tools/types";
-import { getCategory } from "@/config/categories";
+import { resolveCategory } from "@/lib/categories/resolve";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -19,14 +19,17 @@ import { Badge } from "@/components/ui/badge";
  * level on the category pages. The visual size stays `text-h3` either way —
  * heading level is document structure, not type scale.
  */
-export function ToolCard({
+export async function ToolCard({
   tool,
   headingLevel = 3,
 }: {
   tool: ToolSummary;
   headingLevel?: 2 | 3;
 }) {
-  const category = getCategory(tool.category);
+  // Resolved rather than read from the config so a renamed category is renamed
+  // on every card too. `resolveCategories` is memoised per request, so a grid
+  // of thirty cards is still one read of the store.
+  const category = await resolveCategory(tool.category);
   const Heading = headingLevel === 2 ? "h2" : "h3";
 
   const body = (
