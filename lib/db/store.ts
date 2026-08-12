@@ -43,6 +43,44 @@ function filePath(collection: string): string {
   return path.join(DATA_DIR, `${collection}.json`);
 }
 
+/**
+ * Thrown when the filesystem will not accept a write.
+ *
+ * On serverless hosting the application directory is read-only, so every
+ * admin save fails there. That is a known limitation of this storage backend,
+ * not a bug — but it has to surface as a clear message in the admin UI rather
+ * than an unhandled 500, so the person clicking Save learns what happened.
+ */
+export class ReadOnlyStoreError extends Error {
+  constructor() {
+    super(
+      "The filesystem is read-only, so content cannot be saved here. Editing works on a local or persistent-disk deployment; production content editing needs the Supabase backend.",
+    );
+    this.name = "ReadOnlyStoreError";
+  }
+}
+
+/** Read-only filesystem, or no permission to write to it. */
+function isReadOnlyError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException).code;
+  return code === "EROFS" || code === "EACCES" || code === "EPERM";
+}
+
+async function writeAtomically<T>(collection: string, value: T): Promise<void> {
+  try {
+    await mkdir(DATA_DIR, { recursive: true });
+
+    const target = filePath(collection);
+    const temporary = `${target}.${process.pid}.tmp`;
+
+    await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+    await rename(temporary, target);
+  } catch (error) {
+    if (isReadOnlyError(error)) throw new ReadOnlyStoreError();
+    throw error;
+  }
+}
+
 export async function readCollection<T>(collection: string, fallback: T): Promise<T> {
   try {
     const raw = await readFile(filePath(collection), "utf8");
@@ -67,15 +105,7 @@ export async function readCollection<T>(collection: string, fallback: T): Promis
  * the old contents or the new ones.
  */
 export async function writeCollection<T>(collection: string, value: T): Promise<void> {
-  return enqueue(async () => {
-    await mkdir(DATA_DIR, { recursive: true });
-
-    const target = filePath(collection);
-    const temporary = `${target}.${process.pid}.tmp`;
-
-    await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-    await rename(temporary, target);
-  });
+  return enqueue(() => writeAtomically(collection, value));
 }
 
 /** Read-modify-write as one queued operation, so concurrent saves cannot race. */
@@ -87,13 +117,7 @@ export async function updateCollection<T>(
   return enqueue(async () => {
     const current = await readCollection(collection, fallback);
     const next = mutate(current);
-
-    await mkdir(DATA_DIR, { recursive: true });
-    const target = filePath(collection);
-    const temporary = `${target}.${process.pid}.tmp`;
-    await writeFile(temporary, `${JSON.stringify(next, null, 2)}\n`, "utf8");
-    await rename(temporary, target);
-
+    await writeAtomically(collection, next);
     return next;
   });
 }

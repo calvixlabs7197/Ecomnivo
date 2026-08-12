@@ -5,6 +5,7 @@
 Built with Next.js 16 (App Router), TypeScript, Tailwind CSS v4. Supabase arrives in Phase 4.
 
 Full design and build plan: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Deploying: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 

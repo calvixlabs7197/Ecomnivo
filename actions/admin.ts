@@ -9,6 +9,7 @@ import { CATEGORY_SLUGS } from "@/config/categories";
 import { getTool } from "@/lib/tools/catalog";
 import { seedGuideSlugs } from "@/lib/content/guides";
 import { seedPageSlugs } from "@/lib/content/pages";
+import { ReadOnlyStoreError } from "@/lib/db/store";
 import {
   defaultSettings,
   deleteGuideRecord,
@@ -64,6 +65,24 @@ function fail(error: z.ZodError): ActionState {
   return { error: first ? `${first.path.join(".")}: ${first.message}` : "Invalid input." };
 }
 
+/**
+ * Runs the mutate-and-audit half of an action.
+ *
+ * Its job is to turn a read-only filesystem into a sentence the person who
+ * clicked Save can act on. Serverless hosting cannot accept these writes, and
+ * an unhandled 500 there would look like a bug rather than the documented
+ * limitation of this storage backend.
+ */
+async function commit(operation: () => Promise<void>): Promise<ActionState | null> {
+  try {
+    await operation();
+    return null;
+  } catch (error) {
+    if (error instanceof ReadOnlyStoreError) return { error: error.message };
+    throw error;
+  }
+}
+
 // --- tools ---------------------------------------------------------------------
 
 const toolSchema = z.object({
@@ -99,27 +118,31 @@ export async function saveTool(_prev: ActionState, formData: FormData): Promise<
   if (unknown.length > 0) return { error: `Unknown related tools: ${unknown.join(", ")}` };
   if (related.includes(data.slug)) return { error: "A tool cannot be related to itself." };
 
-  await upsertToolRecord({
-    slug: data.slug,
-    name: data.name,
-    shortDescription: data.shortDescription,
-    seoTitle: data.seoTitle,
-    seoDescription: data.seoDescription,
-    categorySlug: data.categorySlug,
-    isPublished: data.isPublished,
-    isFeatured: data.isFeatured,
-    sortOrder: data.sortOrder,
-    relatedTools: related,
-    updatedAt: new Date().toISOString(),
+  const failure = await commit(async () => {
+    await upsertToolRecord({
+      slug: data.slug,
+      name: data.name,
+      shortDescription: data.shortDescription,
+      seoTitle: data.seoTitle,
+      seoDescription: data.seoDescription,
+      categorySlug: data.categorySlug,
+      isPublished: data.isPublished,
+      isFeatured: data.isFeatured,
+      sortOrder: data.sortOrder,
+      relatedTools: related,
+      updatedAt: new Date().toISOString(),
+    });
+
+    await logActivity({
+      actor: session.role,
+      action: "tool.update",
+      entityType: "tool",
+      entityId: data.slug,
+      summary: `Updated ${data.slug}${data.isPublished ? "" : " (unpublished)"}`,
+    });
   });
 
-  await logActivity({
-    actor: session.role,
-    action: "tool.update",
-    entityType: "tool",
-    entityId: data.slug,
-    summary: `Updated ${data.slug}${data.isPublished ? "" : " (unpublished)"}`,
-  });
+  if (failure) return failure;
 
   revalidatePath("/", "layout");
 
@@ -166,7 +189,8 @@ export async function saveGuide(_prev: ActionState, formData: FormData): Promise
   const existing = await getGuideRecord(data.slug);
   const now = new Date().toISOString();
 
-  await upsertGuideRecord({
+  const failure = await commit(async () => {
+    await upsertGuideRecord({
     slug: data.slug,
     title: data.title,
     excerpt: data.excerpt,
@@ -180,17 +204,20 @@ export async function saveGuide(_prev: ActionState, formData: FormData): Promise
     seoDescription: data.seoDescription,
     isIndexable: data.isIndexable,
     relatedTools: related,
-    status: data.status,
-    createdAt: existing?.createdAt ?? now,
+      status: data.status,
+      createdAt: existing?.createdAt ?? now,
+    });
+
+    await logActivity({
+      actor: session.role,
+      action: existing ? "guide.update" : "guide.create",
+      entityType: "guide",
+      entityId: data.slug,
+      summary: `${existing ? "Updated" : "Created"} "${data.title}" (${data.status})`,
+    });
   });
 
-  await logActivity({
-    actor: session.role,
-    action: existing ? "guide.update" : "guide.create",
-    entityType: "guide",
-    entityId: data.slug,
-    summary: `${existing ? "Updated" : "Created"} "${data.title}" (${data.status})`,
-  });
+  if (failure) return failure;
 
   revalidatePath("/", "layout");
 
@@ -257,7 +284,8 @@ export async function savePage(_prev: ActionState, formData: FormData): Promise<
   const existing = await getPageRecord(data.slug);
   const now = new Date().toISOString();
 
-  await upsertPageRecord({
+  const failure = await commit(async () => {
+    await upsertPageRecord({
     slug: data.slug,
     title: data.title,
     contentMd: data.contentMd,
@@ -266,17 +294,20 @@ export async function savePage(_prev: ActionState, formData: FormData): Promise<
     updatedAt: now,
     isIndexable: data.isIndexable,
     isPublished: data.isPublished,
-    isDeletable: !seedPageSlugs.has(data.slug),
-    createdAt: existing?.createdAt ?? now,
+      isDeletable: !seedPageSlugs.has(data.slug),
+      createdAt: existing?.createdAt ?? now,
+    });
+
+    await logActivity({
+      actor: session.role,
+      action: existing ? "page.update" : "page.create",
+      entityType: "page",
+      entityId: data.slug,
+      summary: `${existing ? "Updated" : "Created"} page "${data.title}"`,
+    });
   });
 
-  await logActivity({
-    actor: session.role,
-    action: existing ? "page.update" : "page.create",
-    entityType: "page",
-    entityId: data.slug,
-    summary: `${existing ? "Updated" : "Created"} page "${data.title}"`,
-  });
+  if (failure) return failure;
 
   revalidatePath("/", "layout");
 
@@ -339,15 +370,19 @@ export async function saveSiteSettings(
   const parsed = settingsSchema.safeParse(fields(formData));
   if (!parsed.success) return fail(parsed.error);
 
-  await saveSettings({ ...defaultSettings(), ...parsed.data, socials: [] });
+  const failure = await commit(async () => {
+    await saveSettings({ ...defaultSettings(), ...parsed.data, socials: [] });
 
-  await logActivity({
-    actor: session.role,
-    action: "settings.update",
-    entityType: "settings",
-    entityId: "site",
-    summary: "Updated site settings",
+    await logActivity({
+      actor: session.role,
+      action: "settings.update",
+      entityType: "settings",
+      entityId: "site",
+      summary: "Updated site settings",
+    });
   });
+
+  if (failure) return failure;
 
   revalidatePath("/", "layout");
 
