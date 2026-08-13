@@ -51,7 +51,7 @@ export function SectionHeading({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+    <div className="reveal mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-reading">
         <h2 id={id} className="text-h2">
           {title}

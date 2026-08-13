@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { breadcrumbSchema, collectionPageSchema, type Crumb } from "@/lib/seo/jsonld";
 
 import { Container } from "@/components/ui/container";
-import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { PageHero } from "@/components/layout/page-hero";
 import { GuideCard } from "@/components/content/guide-card";
 import { JsonLd } from "@/components/seo/json-ld";
 
@@ -22,13 +22,7 @@ export default async function GuidesPage() {
 
   return (
     <>
-      <Container className="py-10 sm:py-14">
-        <Breadcrumbs crumbs={crumbs} />
-        <div className="mt-6 max-w-reading">
-          <h1 className="text-h1">{title}</h1>
-          <p className="mt-4 text-lead leading-relaxed text-muted">{description}</p>
-        </div>
-      </Container>
+      <PageHero crumbs={crumbs} title={title} lead={description} />
 
       <Container className="pb-24">
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

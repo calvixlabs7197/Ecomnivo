@@ -3,8 +3,10 @@ import type { Route } from "next";
 import { ArrowRight } from "lucide-react";
 import type { ToolSummary } from "@/lib/tools/types";
 import { resolveCategory } from "@/lib/categories/resolve";
+import { accentChip } from "@/components/categories/accent";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 /**
  * A tool card in one of two states.
@@ -37,17 +39,28 @@ export async function ToolCard({
       <div className="flex items-start justify-between gap-3">
         <Heading className="text-h3 text-ink">{tool.name}</Heading>
         {tool.status === "live" ? (
-          <ArrowRight
-            aria-hidden="true"
-            className="mt-1 size-4 shrink-0 text-muted transition-transform duration-150 ease-soft group-hover:translate-x-0.5 group-hover:text-brand"
-          />
+          <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted transition-all duration-200 ease-soft group-hover:bg-brand-tint group-hover:text-brand">
+            <ArrowRight
+              aria-hidden="true"
+              className="size-4 transition-transform duration-200 ease-soft group-hover:translate-x-0.5"
+            />
+          </span>
         ) : null}
       </div>
 
       <p className="text-sm leading-relaxed text-muted">{tool.shortDescription}</p>
 
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
-        {category ? <Badge>{category.name}</Badge> : null}
+        {/*
+          The category badge carries that category's hue. It is the one place a
+          tool card is coloured, and it is what makes a mixed grid scannable by
+          area without turning every card into a different card.
+        */}
+        {category ? (
+          <Badge className={cn("border-transparent", accentChip[category.accent])}>
+            {category.name}
+          </Badge>
+        ) : null}
         {tool.status === "planned" ? <Badge tone="quiet">Coming soon</Badge> : null}
       </div>
     </div>
@@ -56,7 +69,7 @@ export async function ToolCard({
   if (tool.status === "live") {
     return (
       <Link href={`/tools/${tool.slug}` as Route} className="group block h-full rounded-lg">
-        <Card interactive className="h-full">
+        <Card interactive className="lift sheen h-full">
           {body}
         </Card>
       </Link>

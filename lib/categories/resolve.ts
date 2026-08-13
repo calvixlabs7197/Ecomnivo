@@ -2,7 +2,12 @@ import "server-only";
 import { cache } from "react";
 import type { LucideIcon } from "lucide-react";
 
-import { categories, type Category, type CategorySlug } from "@/config/categories";
+import {
+  categories,
+  type Category,
+  type CategoryAccent,
+  type CategorySlug,
+} from "@/config/categories";
 import { getIcon } from "@/config/icons";
 import { listCategoryRecords } from "@/lib/db/repositories";
 
@@ -22,6 +27,8 @@ export interface ResolvedCategory {
   description: string;
   icon: LucideIcon;
   iconName?: string;
+  /** Fixed in code: the hue is part of the category's identity, not its copy. */
+  accent: CategoryAccent;
   seoTitle?: string;
   seoDescription?: string;
   sortOrder: number;
@@ -47,6 +54,7 @@ function merge(category: Category, index: number, record?: {
     description: record?.description || category.description,
     icon: getIcon(record?.icon, category.icon),
     iconName: record?.icon,
+    accent: category.accent,
     seoTitle: record?.seoTitle,
     seoDescription: record?.seoDescription,
     sortOrder: record?.sortOrder ?? index,

@@ -54,11 +54,11 @@ export function AdminShell({ role, children }: { role: Role; children: ReactNode
             type="button"
             aria-label="Close menu"
             onClick={() => setDrawerOpen(false)}
-            className="fixed inset-0 z-40 bg-ink/30"
+            className="animate-fade-in fixed inset-0 z-40 bg-ink/30"
           />
           <div
             id="admin-drawer"
-            className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col bg-page shadow-md"
+            className="animate-slide-in-left fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col bg-page shadow-lg"
           >
             <div className="flex items-center justify-end px-2 pt-2">
               <button
@@ -182,15 +182,26 @@ function SidebarBody({
                       onClick={onNavigate}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
-                        "flex items-start gap-2.5 rounded-md px-2 py-2 text-sm font-medium transition-colors duration-150 ease-soft",
+                        "relative flex items-start gap-2.5 rounded-md px-2 py-2 text-sm font-medium transition-all duration-150 ease-soft",
                         isActive
                           ? "bg-brand-tint text-brand-hover"
-                          : "text-muted hover:bg-surface hover:text-ink",
+                          : "text-muted hover:translate-x-0.5 hover:bg-surface hover:text-ink",
                       )}
                     >
+                      {/* A rail on the active item, so which screen you are on
+                          is legible from the shape of the sidebar alone. */}
+                      {isActive ? (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-brand"
+                        />
+                      ) : null}
                       <Icon
                         aria-hidden="true"
-                        className={cn("mt-0.5 size-4 shrink-0", isActive && "text-brand")}
+                        className={cn(
+                          "mt-0.5 size-4 shrink-0 transition-transform duration-150 ease-soft",
+                          isActive ? "text-brand" : "group-hover:scale-110",
+                        )}
                       />
                       <span className="min-w-0">
                         {item.label}

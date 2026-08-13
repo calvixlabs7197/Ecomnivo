@@ -33,28 +33,42 @@ export function ToolResults({
   const rest = results.filter((result) => result.emphasis !== "primary");
 
   return (
-    <div className="rounded-lg border border-rule bg-surface p-5 sm:p-6">
+    <div className="overflow-hidden rounded-lg border border-rule bg-gradient-to-b from-brand-tint/60 to-surface p-5 sm:p-6">
       <h3 className="text-eyebrow uppercase text-muted">Results</h3>
 
       <div className="mt-4 flex flex-col gap-5">
-        {primary.map((result) => (
-          <div key={result.key}>
-            <p className="text-sm text-muted">{result.label}</p>
-            <p
-              className={cn(
-                "mt-1 text-4xl font-bold tabular-nums tracking-tight",
-                // The placeholder is meaningful text ("no value yet"), so it
-                // takes a readable colour rather than a decorative grey.
-                ready ? toneClass[result.tone ?? "neutral"] : "text-muted",
-              )}
-            >
-              {ready ? formatResult(result.value, result.format, currency) : "—"}
-            </p>
-            {ready && result.note ? (
-              <p className="mt-1.5 max-w-prose text-sm text-muted">{result.note}</p>
-            ) : null}
-          </div>
-        ))}
+        {primary.map((result) => {
+          const formatted = ready
+            ? formatResult(result.value, result.format, currency)
+            : "—";
+
+          return (
+            <div key={result.key}>
+              <p className="text-sm text-muted">{result.label}</p>
+              {/*
+                Keyed by the formatted value, so React remounts the node when
+                the number changes and the pop animation replays. It is 350ms of
+                scale from 0.97 — enough to catch the eye of someone watching
+                the inputs, short enough that typing a five-digit figure does not
+                feel like it is fighting back.
+              */}
+              <p
+                key={formatted}
+                className={cn(
+                  "animate-pop mt-1 text-4xl font-bold tabular-nums tracking-tight",
+                  // The placeholder is meaningful text ("no value yet"), so it
+                  // takes a readable colour rather than a decorative grey.
+                  ready ? toneClass[result.tone ?? "neutral"] : "text-muted",
+                )}
+              >
+                {formatted}
+              </p>
+              {ready && result.note ? (
+                <p className="mt-1.5 max-w-prose text-sm text-muted">{result.note}</p>
+              ) : null}
+            </div>
+          );
+        })}
 
         {rest.length > 0 ? (
           <dl className="flex flex-col divide-y divide-rule border-t border-rule">

@@ -5,6 +5,7 @@ import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { SiteChrome } from "@/components/layout/site-chrome";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Analytics } from "@/components/analytics/analytics";
 import { ConsentBanner } from "@/components/analytics/consent-banner";
@@ -60,13 +61,18 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
 
-        <Header />
+        {/* Absent on /admin and /login, which bring their own shell. */}
+        <SiteChrome>
+          <Header />
+        </SiteChrome>
 
         <main id="main" className="flex-1">
           {children}
         </main>
 
-        <Footer />
+        <SiteChrome>
+          <Footer />
+        </SiteChrome>
 
         {/*
           Both render nothing unless analytics is configured, and the tag is

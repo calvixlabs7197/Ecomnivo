@@ -89,7 +89,7 @@ export function StatCard({
   }[tone];
 
   const body = (
-    <div className="flex h-full flex-col rounded-lg border border-rule bg-page p-4 transition-colors duration-150 ease-soft group-hover:border-rule-strong group-hover:bg-surface">
+    <div className="lift flex h-full flex-col rounded-lg border border-rule bg-page p-4 group-hover:border-rule-strong">
       <p className="flex items-center gap-1 text-sm text-muted">
         {label}
         {href ? (
@@ -99,7 +99,11 @@ export function StatCard({
           />
         ) : null}
       </p>
-      <p className={cn("mt-1 text-3xl font-bold tabular-nums", toneClass)}>{value}</p>
+      {/* Keyed by the value so a changed figure replays the pop — the same
+          motion the calculator's results use, for the same reason. */}
+      <p key={String(value)} className={cn("animate-pop mt-1 text-3xl font-bold tabular-nums", toneClass)}>
+        {value}
+      </p>
       {hint ? <p className="mt-auto pt-2 text-xs leading-relaxed text-muted">{hint}</p> : null}
     </div>
   );
@@ -114,7 +118,11 @@ export function StatCard({
 }
 
 export function StatGrid({ children }: { children: ReactNode }) {
-  return <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{children}</ul>;
+  return (
+    <ul className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>li]:animate-fade-up [&>li]:animate-delay">
+      {children}
+    </ul>
+  );
 }
 
 /** A titled block. The workhorse container for everything below the header. */
@@ -134,7 +142,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-lg border border-rule bg-page", className)}>
+    <section className={cn("animate-fade-up rounded-lg border border-rule bg-page", className)}>
       {title || actions ? (
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-rule px-5 py-4">
           <div className="min-w-0">
@@ -186,7 +194,9 @@ export function DataTable({
         <thead>
           <tr className="border-b border-rule bg-surface/60">{head}</tr>
         </thead>
-        <tbody className="divide-y divide-rule">{children}</tbody>
+        <tbody className="divide-y divide-rule [&>tr]:transition-colors [&>tr]:duration-150 [&>tr:hover]:bg-surface/70">
+          {children}
+        </tbody>
       </table>
     </div>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { Route } from "next";
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
@@ -20,6 +21,8 @@ import {
   type Crumb,
 } from "@/lib/seo/jsonld";
 
+import { accentChip } from "@/components/categories/accent";
+import { cn } from "@/lib/utils";
 import { Container } from "@/components/ui/container";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Accordion } from "@/components/ui/accordion";
@@ -69,6 +72,9 @@ export default async function ToolPage({ params }: PageProps<"/tools/[slug]">) {
   if (!summary || !content || !engine || summary.status !== "live") notFound();
 
   const category = await resolveCategory(summary.category);
+  // Named for the JSX below: `category.icon` is a component, and a lowercase
+  // identifier there would be read as an HTML tag.
+  const CategoryIcon = category?.icon;
 
   const relatedSlugs = summary.relatedToolsOverride ?? content.relatedTools;
   const relatedTools = relatedSlugs
@@ -102,14 +108,34 @@ export default async function ToolPage({ params }: PageProps<"/tools/[slug]">) {
 
   return (
     <>
-      <Container className="py-8 sm:py-12">
-        <Breadcrumbs crumbs={crumbs} />
+      <div className="aurora relative">
+        <Container className="py-8 sm:py-12">
+          <Breadcrumbs crumbs={crumbs} />
 
-        <div className="mt-6 max-w-reading">
-          <h1 className="text-h1">{content.h1}</h1>
-          <p className="mt-4 text-lead leading-relaxed text-muted">{content.intro}</p>
-        </div>
-      </Container>
+          <div
+            className="stagger mt-6 max-w-reading"
+            style={{ "--stagger": "80ms" } as CSSProperties}
+          >
+            <div className="animate-fade-up animate-delay flex flex-wrap items-center gap-2">
+              {category && CategoryIcon ? (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+                    accentChip[category.accent],
+                  )}
+                >
+                  <CategoryIcon aria-hidden="true" className="size-3.5" />
+                  {category.name}
+                </span>
+              ) : null}
+            </div>
+            <h1 className="animate-fade-up animate-delay mt-3 text-h1">{content.h1}</h1>
+            <p className="animate-fade-up animate-delay mt-4 text-lead leading-relaxed text-muted">
+              {content.intro}
+            </p>
+          </div>
+        </Container>
+      </div>
 
       <Container className="pb-12">
         <ToolRunner slug={slug} toolName={summary.name} category={summary.category} />

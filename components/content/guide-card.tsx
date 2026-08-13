@@ -31,14 +31,18 @@ export function GuideCard({
 
   return (
     <Link href={`/guides/${guide.slug}` as Route} className="group block h-full rounded-lg">
-      <Card interactive className="h-full">
+      <Card interactive className="lift sheen h-full">
         <div className="flex h-full flex-col gap-3 p-5">
           <div className="flex items-start justify-between gap-3">
-            <Heading className="text-h3 text-ink">{guide.title}</Heading>
-            <ArrowRight
-              aria-hidden="true"
-              className="mt-1 size-4 shrink-0 text-muted transition-transform duration-150 ease-soft group-hover:translate-x-0.5 group-hover:text-brand"
-            />
+            <Heading className="text-h3 text-ink transition-colors duration-200 ease-soft group-hover:text-brand-hover">
+              {guide.title}
+            </Heading>
+            <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted transition-all duration-200 ease-soft group-hover:bg-brand-tint group-hover:text-brand">
+              <ArrowRight
+                aria-hidden="true"
+                className="size-4 transition-transform duration-200 ease-soft group-hover:translate-x-0.5"
+              />
+            </span>
           </div>
 
           <p className="text-sm leading-relaxed text-muted">{guide.excerpt}</p>

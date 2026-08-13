@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 
 import { CATEGORY_SLUGS } from "@/config/categories";
@@ -7,6 +8,8 @@ import { listToolsByCategory } from "@/lib/tools/resolve";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { breadcrumbSchema, collectionPageSchema, type Crumb } from "@/lib/seo/jsonld";
 
+import { accentChip } from "@/components/categories/accent";
+import { cn } from "@/lib/utils";
 import { Container } from "@/components/ui/container";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { ToolGrid } from "@/components/tools/tool-grid";
@@ -62,17 +65,31 @@ export default async function CategoryPage({ params }: PageProps<"/categories/[s
 
   return (
     <>
-      <Container className="py-10 sm:py-14">
-        <Breadcrumbs crumbs={crumbs} />
+      <div className="aurora relative border-b border-rule">
+        <Container className="py-10 sm:py-14">
+          <Breadcrumbs crumbs={crumbs} />
 
-        <div className="mt-6 max-w-reading">
-          <Icon aria-hidden="true" className="size-7 text-brand" />
-          <h1 className="mt-4 text-h1">{category.name} Calculators</h1>
-          <p className="mt-4 text-lead leading-relaxed text-muted">
-            {category.description}
-          </p>
-        </div>
-      </Container>
+          <div
+            className="stagger mt-6 max-w-reading"
+            style={{ "--stagger": "80ms" } as CSSProperties}
+          >
+            <span
+              className={cn(
+                "animate-scale-in animate-delay inline-flex size-12 items-center justify-center rounded-lg",
+                accentChip[category.accent],
+              )}
+            >
+              <Icon aria-hidden="true" className="size-6" />
+            </span>
+            <h1 className="animate-fade-up animate-delay mt-4 text-h1">
+              {category.name} Calculators
+            </h1>
+            <p className="animate-fade-up animate-delay mt-4 text-lead leading-relaxed text-muted">
+              {category.description}
+            </p>
+          </div>
+        </Container>
+      </div>
 
       {/* Bottom spacing lives here, not on the ad slot — the slot renders
           nothing in production until an ad client is configured. */}

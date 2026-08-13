@@ -1320,6 +1320,49 @@ The icon is admin-editable and therefore untrusted, so it resolves against an el
 
 ---
 
+## 17. Phase 9 — the visual layer
+
+Completed 2026-08-13, on the instruction to make the interface attractive and animated across both the public site and the admin.
+
+### No animation library
+
+Everything is CSS. Keyframes and easings are theme tokens in `globals.css`, so `animate-fade-up` and friends are ordinary Tailwind utilities. The JavaScript bundle is unchanged.
+
+Two rules the whole layer obeys:
+
+- **Only `transform` and `opacity` are animated.** Both are composited. Animating height or width on a page of thirty cards is how a redesign that looks premium on a laptop becomes janky on the phone most visitors are holding.
+- **Content is never hidden waiting for JavaScript.** Scroll reveals use `animation-timeline: view()`; where it is unsupported the element is simply visible. No observers, no flash of missing content, nothing to fail if a script does not load. The sticky header's shadow works the same way through `animation-timeline: scroll()`, which is why there is still no scroll listener anywhere in the app.
+
+`prefers-reduced-motion` is honoured twice: the existing global block collapses durations, and an explicit block resets the reveal utilities — an element whose first frame is `opacity: 0` must not be left invisible when its animation is removed. Verified by rendering with reduced motion forced.
+
+### Four accents, in one place each
+
+§6 said categories share one neutral tone, on the grounds that four colours across a grid is how a restrained palette becomes a rainbow. That still holds for anything that repeats — so the hues are confined to a single icon chip per category card, and a single badge per tool card. Each is dark enough to clear 3:1 against white and is used at a 10% tint behind the glyph. Nothing else on the page takes a hue.
+
+The accent is a name on the category (`profit`, `ads`, `price`, `growth`) rather than a class string, so `config/categories.ts` stays about content. It is fixed in code and not admin-editable: the hue is part of a category's identity, and it is the one thing about a category that should not change because somebody was editing its description.
+
+### The site chrome, and the shell it was fighting
+
+The admin renders a full application shell, and the root layout was stacking the marketing header above it — so the sidebar overlapped the logo and the page carried two navigations that disagreed about where you were. Only visible once the sidebar existed.
+
+`components/layout/site-chrome.tsx` drops the public header and footer on `/admin` and `/login`. The textbook fix is two root layouts under route groups; that means moving forty route files, splitting the metadata and font setup, and giving up the single global `not-found`. This is one component and one condition, and it costs a page only staff load a header it renders and discards. When a second public shell appears, the route-group refactor earns its keep. It does not yet.
+
+`/login` gained its own branded screen in the same change, since removing the site header would otherwise have left it as a heading on an empty page.
+
+### Where the motion actually is
+
+| Surface | What moves |
+|---|---|
+| Hero | Staggered entrance, drifting gradient wash, faint grid, live counts read from the store |
+| Cards | Lift and shadow on hover, icon chip scale, arrow slide, one-pixel top sheen |
+| Sections | Reveal on scroll, staggered across a grid, capped at eight steps |
+| Calculator | The result pops when the number changes — keyed on the formatted value, so it replays on change and not on every keystroke |
+| Admin | Sidebar rail on the active item, stat tiles that pop on change, chart bars that grow from the baseline, row hover, drawer slide-in |
+
+The hero counts are read from the store rather than written into the copy, because a hero that advertises "50+ tools" it does not have is a line somebody has to maintain by hand and eventually lies.
+
+---
+
 ## Appendix A — Verified formulas
 
 Hand-derived, each with a worked check. These become the unit-test fixtures — the tests assert *these* numbers, not whatever the implementation happens to return.

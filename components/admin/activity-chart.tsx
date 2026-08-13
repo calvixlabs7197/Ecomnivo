@@ -1,4 +1,6 @@
+import type { CSSProperties } from "react";
 import type { DayCount } from "@/lib/admin/metrics";
+import { cn } from "@/lib/utils";
 
 /**
  * Admin changes per day, for the last fortnight.
@@ -21,16 +23,24 @@ export function ActivityChart({ days }: { days: readonly DayCount[] }) {
         Admin changes per day over the last {days.length} days
       </figcaption>
 
-      <div className="flex items-end gap-1" style={{ height: "6rem" }} aria-hidden="true">
+      {/*
+        Bars grow from the baseline on first paint, left to right. `scaleY` on
+        an element anchored to the bottom, so it composites — animating the
+        height itself would relayout the row fourteen times per frame.
+      */}
+      <div
+        className="stagger flex items-end gap-1"
+        style={{ height: "6rem", "--stagger": "35ms" } as CSSProperties}
+        aria-hidden="true"
+      >
         {days.map((day) => (
           <div key={day.date} className="flex h-full flex-1 items-end">
             <div
               title={`${day.label}: ${day.count} ${day.count === 1 ? "change" : "changes"}`}
-              className={
-                day.count > 0
-                  ? "w-full rounded-t-[4px] bg-brand"
-                  : "w-full rounded-t-[4px] bg-rule"
-              }
+              className={cn(
+                "animate-grow-up animate-delay w-full origin-bottom rounded-t-[4px] transition-colors duration-150",
+                day.count > 0 ? "bg-brand hover:bg-brand-hover" : "bg-rule",
+              )}
               style={{ height: day.count > 0 ? `${(day.count / peak) * 100}%` : "2px" }}
             />
           </div>

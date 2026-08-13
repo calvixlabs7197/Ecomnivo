@@ -4,13 +4,18 @@ import { cn } from "@/lib/utils";
 type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
 
+/**
+ * `transition-colors` widened to `transition` so the shadow and the press
+ * animate too. Nothing here transitions a layout property — the press is a
+ * `scale`, which is composited and cannot reflow the page under the cursor.
+ */
 const base =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors duration-150 ease-soft disabled:pointer-events-none disabled:opacity-50";
+  "press inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition duration-150 ease-soft disabled:pointer-events-none disabled:opacity-50";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-brand text-white hover:bg-brand-hover",
+  primary: "bg-brand text-white shadow-sm hover:bg-brand-hover hover:shadow-brand",
   secondary:
-    "border border-rule-strong bg-page text-ink hover:bg-surface hover:border-rule-strong",
+    "border border-rule-strong bg-page text-ink hover:bg-surface hover:border-muted hover:shadow-sm",
   ghost: "text-ink hover:bg-surface",
 };
 

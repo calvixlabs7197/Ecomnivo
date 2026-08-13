@@ -10,9 +10,9 @@ export function ToolGrid({
   headingLevel?: 2 | 3;
 }) {
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {tools.map((tool) => (
-        <li key={tool.slug} className="h-full">
+        <li key={tool.slug} className="reveal animate-delay h-full">
           <ToolCard tool={tool} headingLevel={headingLevel} />
         </li>
       ))}

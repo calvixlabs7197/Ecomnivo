@@ -11,16 +11,18 @@ import { buttonStyles } from "@/components/ui/button";
  * Sticky header, solid background.
  *
  * Solid rather than translucent-with-blur: `backdrop-filter` repaints on every
- * scroll frame, and the brief asks for speed over the glassmorphism look.
+ * scroll frame, and the brief asks for speed over the glassmorphism look. It
+ * does gain a shadow as the page scrolls under it — a CSS scroll-driven
+ * animation, so that separation costs no JavaScript and no scroll listener.
  */
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b border-rule bg-page">
+    <header className="scroll-elevate sticky top-0 z-40 border-b border-rule bg-page">
       <Container>
         <div className="flex h-16 items-center justify-between gap-6">
           <Link
             href="/"
-            className="rounded-sm"
+            className="rounded-sm transition-transform duration-200 ease-soft hover:scale-[1.03]"
             aria-label={`${siteConfig.name} home`}
           >
             <Logo />

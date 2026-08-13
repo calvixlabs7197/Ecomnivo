@@ -35,6 +35,26 @@
   --color-brand-hover: #1d4ed8;
   --color-brand-tint: #eff6ff;
 
+  /* --- category accents -------------------------------------------------- */
+  /*
+   * Four hues, used in exactly one place: the icon chip on a category card and
+   * its hub page. Not on borders, not on text, not on badges.
+   *
+   * The original rule here was one neutral tone for all four, on the grounds
+   * that four colours across a grid is how a restrained palette becomes a
+   * rainbow. That still holds for anything that repeats — which is why these
+   * are confined to a single 40px square per card, where they do the one job
+   * colour is good at: making four otherwise identical cards instantly
+   * distinguishable.
+   *
+   * Every value is dark enough to clear 3:1 against white for the icon glyph,
+   * and each is used at 10% tint for the chip behind it.
+   */
+  --color-accent-profit: #0f766e;
+  --color-accent-ads: #c2410c;
+  --color-accent-price: #7c3aed;
+  --color-accent-growth: #0369a1;
+
   /* --- semantic state (never used as decoration) ------------------------ */
   /*
    * These are darkened from the brief's suggested palette (#16A34A / #F59E0B
@@ -94,6 +114,10 @@
 
   --shadow-sm: 0 1px 2px 0 rgb(17 24 39 / 0.05);
   --shadow-md: 0 4px 12px -2px rgb(17 24 39 / 0.08);
+  /* Reserved for something that is genuinely lifting off the page: a card
+     under the cursor, the mobile drawer. Not a resting state. */
+  --shadow-lg: 0 16px 36px -12px rgb(17 24 39 / 0.16);
+  --shadow-brand: 0 10px 24px -10px rgb(37 99 235 / 0.55);
 
   /* --- layout ----------------------------------------------------------- */
   --container-page: 75rem; /* 1200px — max-w-page */
@@ -101,6 +125,87 @@
 
   /* --- motion ----------------------------------------------------------- */
   --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  /* A little overshoot, for something arriving rather than settling. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-fade-up: fade-up 0.6s var(--ease-soft) both;
+  --animate-fade-in: fade-in 0.5s var(--ease-soft) both;
+  --animate-scale-in: scale-in 0.4s var(--ease-spring) both;
+  --animate-pop: pop 0.35s var(--ease-spring);
+  --animate-grow-up: grow-up 0.7s var(--ease-soft) both;
+  --animate-float: float 14s ease-in-out infinite;
+  --animate-slide-in-left: slide-in-left 0.28s var(--ease-soft) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* For a number that has just changed: noticed, not animated at. */
+  @keyframes pop {
+    0% {
+      transform: scale(0.97);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes grow-up {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(0, -3%, 0) scale(1.06);
+    }
+  }
 }
 
 @layer base {
@@ -174,5 +279,194 @@
   .skip-link:focus {
     left: 0.5rem;
     top: 0.5rem;
+  }
+
+  /* =========================================================================
+     Motion
+     -------------------------------------------------------------------------
+     Two rules govern everything below.
+
+     **Only `transform` and `opacity` are animated.** Both are composited, so
+     they cost no layout and no repaint. Animating height, top or width on a
+     page of thirty cards is how a "premium" redesign ends up janky on the
+     phone most visitors are holding.
+
+     **Content is never hidden waiting for JavaScript.** Scroll reveals use CSS
+     scroll-driven animations, so where the browser does not support them the
+     element is simply visible — no observer, no flash of missing content, and
+     nothing to go wrong if a script fails to load.
+     ========================================================================= */
+
+  /*
+   * Stagger. Set `--delay` on an element, or `--stagger` on a parent to walk
+   * its children. Capped at eight: past that the last item arrives late enough
+   * that it reads as a page still loading rather than as a flourish.
+   */
+  .stagger > * {
+    --delay: calc(var(--stagger, 60ms) * var(--index, 0));
+  }
+  .stagger > *:nth-child(1) { --index: 0; }
+  .stagger > *:nth-child(2) { --index: 1; }
+  .stagger > *:nth-child(3) { --index: 2; }
+  .stagger > *:nth-child(4) { --index: 3; }
+  .stagger > *:nth-child(5) { --index: 4; }
+  .stagger > *:nth-child(6) { --index: 5; }
+  .stagger > *:nth-child(7) { --index: 6; }
+  .stagger > *:nth-child(n + 8) { --index: 7; }
+
+  .animate-delay {
+    animation-delay: var(--delay, 0ms);
+  }
+
+  /*
+   * Reveal on scroll, with no JavaScript at all.
+   *
+   * `animation-timeline: view()` ties the animation to the element's position
+   * in the viewport. Unsupported browsers ignore the whole block and show the
+   * content immediately, which is the correct fallback rather than a
+   * compromise — the page is readable either way.
+   */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal {
+        animation: fade-up 0.8s var(--ease-soft) both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 22%;
+      }
+    }
+  }
+
+  /* Lift on hover. The shadow does the work; the translate keeps it honest. */
+  .lift {
+    transition:
+      transform 0.2s var(--ease-soft),
+      box-shadow 0.2s var(--ease-soft),
+      border-color 0.2s var(--ease-soft),
+      background-color 0.2s var(--ease-soft);
+  }
+
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* A press should feel like a press. */
+  .press:active {
+    transform: translateY(0) scale(0.985);
+  }
+
+  /*
+   * The soft brand wash behind a hero or a panel heading.
+   * A gradient at 6% is a suggestion of colour, not a colour.
+   */
+  .aurora {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+  }
+
+  .aurora::before {
+    content: "";
+    position: absolute;
+    inset: -30% -10% auto -10%;
+    height: 34rem;
+    z-index: -1;
+    background:
+      radial-gradient(38rem 22rem at 22% 30%, rgb(37 99 235 / 0.1), transparent 65%),
+      radial-gradient(34rem 20rem at 78% 20%, rgb(124 58 237 / 0.08), transparent 62%);
+    animation: var(--animate-float);
+    pointer-events: none;
+  }
+
+  /* Faint engineering grid, faded out before it reaches any text. */
+  .grid-veil::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(to right, var(--color-rule) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-rule) 1px, transparent 1px);
+    background-size: 3.5rem 3.5rem;
+    mask-image: radial-gradient(ellipse 65% 60% at 50% 0%, #000 10%, transparent 75%);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /*
+   * The header gains a shadow once the page has scrolled under it.
+   *
+   * A scroll-driven animation rather than a scroll listener: no JavaScript, no
+   * event running on the main thread at 60fps, and it degrades to a permanently
+   * flat header where unsupported. Only `box-shadow` is animated — the solid
+   * background is deliberate (see the note in `components/layout/header.tsx`),
+   * because `backdrop-filter` repaints the whole strip on every frame.
+   */
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .scroll-elevate {
+        animation: elevate linear both;
+        animation-timeline: scroll();
+        animation-range: 0 96px;
+      }
+    }
+  }
+
+  @keyframes elevate {
+    to {
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  /* A one-pixel highlight along the top edge, the way real materials catch light. */
+  .sheen {
+    position: relative;
+  }
+
+  .sheen::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgb(255 255 255 / 0.9) 20%,
+      rgb(255 255 255 / 0.9) 80%,
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.25s var(--ease-soft);
+  }
+
+  .group:hover .sheen::before,
+  .sheen:hover::before {
+    opacity: 1;
+  }
+
+  /*
+   * Reduced motion.
+   *
+   * The global block below already collapses durations, but scroll-driven and
+   * `both`-filled animations need saying explicitly: with no animation at all,
+   * an element whose start frame is `opacity: 0` would otherwise never arrive.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .animate-fade-up,
+    .animate-fade-in,
+    .animate-scale-in {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .aurora::before {
+      animation: none !important;
+    }
+
+    .lift:hover {
+      transform: none;
+    }
   }
 }

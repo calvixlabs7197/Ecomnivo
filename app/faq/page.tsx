@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { breadcrumbSchema, faqSchema, type Crumb } from "@/lib/seo/jsonld";
 
 import { Container } from "@/components/ui/container";
-import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { PageHero } from "@/components/layout/page-hero";
 import { Accordion } from "@/components/ui/accordion";
 import { buttonStyles } from "@/components/ui/button";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -22,13 +22,7 @@ const crumbs: Crumb[] = [{ name: "Home", href: "/" }, { name: "FAQ" }];
 export default function FaqPage() {
   return (
     <>
-      <Container className="py-10 sm:py-14">
-        <Breadcrumbs crumbs={crumbs} />
-        <div className="mt-6 max-w-reading">
-          <h1 className="text-h1">{title}</h1>
-          <p className="mt-4 text-lead leading-relaxed text-muted">{description}</p>
-        </div>
-      </Container>
+      <PageHero crumbs={crumbs} title={title} lead={description} />
 
       <Container className="pb-16">
         <div className="max-w-reading">

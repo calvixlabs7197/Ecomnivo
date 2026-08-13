@@ -10,6 +10,15 @@ export const CATEGORY_SLUGS = [
 
 export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
 
+/**
+ * The four accent hues, one per category.
+ *
+ * A name rather than a class string, so this file stays about content and the
+ * component decides how to paint it. Used only on the icon chip — see the
+ * note beside the tokens in `app/globals.css`.
+ */
+export type CategoryAccent = "profit" | "ads" | "price" | "growth";
+
 export interface Category {
   slug: CategorySlug;
   name: string;
@@ -18,6 +27,7 @@ export interface Category {
   /** Full paragraph for the category page intro and its meta description. */
   description: string;
   icon: LucideIcon;
+  accent: CategoryAccent;
 }
 
 /**
@@ -33,6 +43,7 @@ export const categories: readonly Category[] = [
     description:
       "Revenue is not profit. These calculators work out what is left after cost of goods, shipping, payment processing fees, platform costs and advertising — the number that decides whether a product is worth selling at all.",
     icon: Wallet,
+    accent: "profit",
   },
   {
     slug: "advertising",
@@ -41,6 +52,7 @@ export const categories: readonly Category[] = [
     description:
       "Paid traffic is only worth buying while it returns more than it costs. These calculators cover return on ad spend, the break-even point your margin sets, cost per click, and what you need to budget to hit a revenue target.",
     icon: Megaphone,
+    accent: "ads",
   },
   {
     slug: "pricing",
@@ -49,6 +61,7 @@ export const categories: readonly Category[] = [
     description:
       "Markup and margin are not the same number, and confusing them is the fastest way to underprice a product. These calculators handle selling prices, markups, discounts and wholesale tiers without that trap.",
     icon: Tags,
+    accent: "price",
   },
   {
     slug: "growth",
@@ -57,6 +70,7 @@ export const categories: readonly Category[] = [
     description:
       "Revenue comes from traffic, conversion rate and average order value — and keeping a customer is worth more than winning one. These calculators size each lever so you can see which one is worth working on.",
     icon: LineChart,
+    accent: "growth",
   },
 ] as const;
 

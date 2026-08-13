@@ -5,7 +5,7 @@ import { breadcrumbSchema, collectionPageSchema, type Crumb } from "@/lib/seo/js
 
 import { categoryCounts } from "@/lib/tools/resolve";
 import { Container } from "@/components/ui/container";
-import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { PageHero } from "@/components/layout/page-hero";
 import { CategoryGrid } from "@/components/categories/category-grid";
 import { JsonLd } from "@/components/seo/json-ld";
 
@@ -25,17 +25,11 @@ export default async function CategoriesPage() {
   const counts = await categoryCounts();
   return (
     <>
-      <Container className="py-10 sm:py-14">
-        <Breadcrumbs crumbs={crumbs} />
-
-        <div className="mt-6 max-w-reading">
-          <h1 className="text-h1">{title}</h1>
-          <p className="mt-4 text-lead leading-relaxed text-muted">
-            Four questions every online seller ends up asking. Pick the one you are trying
-            to answer.
-          </p>
-        </div>
-      </Container>
+      <PageHero
+        crumbs={crumbs}
+        title={title}
+        lead="Four questions every online seller ends up asking. Pick the one you are trying to answer."
+      />
 
       <Container className="pb-20">
         {/* h2: the grid is the page's top-level content, directly under the h1. */}

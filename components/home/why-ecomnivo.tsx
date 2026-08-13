@@ -37,12 +37,14 @@ const reasons = [
 
 export function WhyEcomNivo() {
   return (
-    <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
+    <ul className="stagger grid gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
       {reasons.map((reason) => {
         const Icon = reason.icon;
         return (
-          <li key={reason.title} className="flex flex-col gap-2.5">
-            <Icon aria-hidden="true" className="size-5 text-brand" />
+          <li key={reason.title} className="reveal animate-delay group flex flex-col gap-2.5">
+            <span className="inline-flex size-10 items-center justify-center rounded-md bg-brand-tint text-brand transition-transform duration-200 ease-soft group-hover:scale-110">
+              <Icon aria-hidden="true" className="size-5" />
+            </span>
             <h3 className="font-semibold text-ink">{reason.title}</h3>
             <p className="text-sm leading-relaxed text-muted">{reason.body}</p>
           </li>

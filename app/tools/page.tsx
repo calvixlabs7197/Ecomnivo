@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { breadcrumbSchema, collectionPageSchema, type Crumb } from "@/lib/seo/jsonld";
 
 import { Container } from "@/components/ui/container";
-import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { PageHero } from "@/components/layout/page-hero";
 import { ToolGrid } from "@/components/tools/tool-grid";
 import { JsonLd } from "@/components/seo/json-ld";
 
@@ -38,25 +38,19 @@ export default async function ToolsPage() {
 
   return (
     <>
-      <Container className="py-10 sm:py-14">
-        <Breadcrumbs crumbs={crumbs} />
-
-        <div className="mt-6 max-w-reading">
-          <h1 className="text-h1">{title}</h1>
-          <p className="mt-4 text-lead leading-relaxed text-muted">
-            {liveCount} calculators covering the numbers that decide whether an
-            online store makes money. Each one shows its formula and a worked example, so
-            you can check the maths rather than trust it.
+      <PageHero
+        crumbs={crumbs}
+        title={title}
+        lead={`${liveCount} calculators covering the numbers that decide whether an online store makes money. Each one shows its formula and a worked example, so you can check the maths rather than trust it.`}
+      >
+        {liveCount === 0 ? (
+          <p className="leading-relaxed text-muted">
+            The calculators are being built and released in order of how often sellers
+            need them. Nothing is listed as ready until its formula is verified and
+            tested.
           </p>
-          {liveCount === 0 ? (
-            <p className="mt-4 leading-relaxed text-muted">
-              The calculators are being built and released in order of how often sellers
-              need them. Nothing is listed as ready until its formula is verified and
-              tested.
-            </p>
-          ) : null}
-        </div>
-      </Container>
+        ) : null}
+      </PageHero>
 
       <Container className="pb-20">
         <div className="flex flex-col gap-14">

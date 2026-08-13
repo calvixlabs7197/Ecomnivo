@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 
 import { siteConfig } from "@/config/site";
 import { homeFaqs } from "@/config/faqs";
-import { categoryCounts, listFeaturedTools } from "@/lib/tools/resolve";
+import { categoryCounts, listFeaturedTools, listPublishedTools } from "@/lib/tools/resolve";
 import { listGuides } from "@/lib/content/guides";
+import { resolveCategories } from "@/lib/categories/resolve";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { faqSchema } from "@/lib/seo/jsonld";
 
@@ -28,16 +29,24 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function HomePage() {
-  const [featured, guides, counts] = await Promise.all([
+  const [featured, guides, counts, liveTools, categories] = await Promise.all([
     listFeaturedTools(),
     listGuides(),
     categoryCounts(),
+    listPublishedTools(),
+    // Not `Object.keys(counts)` — that omits any category with nothing
+    // published in it yet, and the hero would quietly claim three.
+    resolveCategories(),
   ]);
   const latestGuides = guides.slice(0, 3);
 
   return (
     <>
-      <Hero />
+      <Hero
+        toolCount={liveTools.length}
+        categoryCount={categories.length}
+        guideCount={guides.length}
+      />
 
       <Section labelledBy="popular-tools">
         <Container>
