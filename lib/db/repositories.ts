@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 
-import { readCollection, updateCollection } from "@/lib/db/store";
+import { readCollection, updateCollection, ReadOnlyStoreError } from "@/lib/db/store";
 import type {
   ActivityRecord,
   CategoryRecord,
@@ -169,14 +169,35 @@ export async function listActivity(): Promise<ActivityRecord[]> {
  * cannot grow without bound. Nothing in the admin UI can edit or delete
  * entries — the mirror of the Postgres design, where the log has no update or
  * delete policy at all.
+ *
+ * **A read-only filesystem is survived, not raised.** The log is a side effect
+ * of an action, never its purpose, so failing to write one must not fail the
+ * action that caused it. Signing in is the case that proves it: on serverless
+ * hosting the audit write is the only write in the whole login path, and
+ * letting it throw turned a correct password into a 500 with the session cookie
+ * discarded — admin was unreachable in production for exactly this reason.
+ *
+ * Only `ReadOnlyStoreError` is swallowed, and it is reported to the server log.
+ * Every content mutation still fails loudly, because each one writes its own
+ * record before it gets here.
  */
 export async function logActivity(
   entry: Omit<ActivityRecord, "id" | "createdAt">,
 ): Promise<void> {
-  await updateCollection<ActivityRecord[]>("activity", [], (current) =>
-    [{ ...entry, id: randomUUID(), createdAt: new Date().toISOString() }, ...current].slice(
-      0,
-      ACTIVITY_LIMIT,
-    ),
-  );
+  try {
+    await updateCollection<ActivityRecord[]>("activity", [], (current) =>
+      [{ ...entry, id: randomUUID(), createdAt: new Date().toISOString() }, ...current].slice(
+        0,
+        ACTIVITY_LIMIT,
+      ),
+    );
+  } catch (error) {
+    if (error instanceof ReadOnlyStoreError) {
+      console.warn(
+        `Audit entry not recorded (read-only store): ${entry.action} ${entry.entityId}`,
+      );
+      return;
+    }
+    throw error;
+  }
 }
