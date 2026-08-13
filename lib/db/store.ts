@@ -55,16 +55,26 @@ function filePath(collection: string): string {
 export class ReadOnlyStoreError extends Error {
   constructor() {
     super(
-      "The filesystem is read-only, so content cannot be saved here. Editing works on a local or persistent-disk deployment; production content editing needs the Supabase backend.",
+      "This host will not accept writes, so content cannot be saved here. Editing works on a local or persistent-disk deployment; production content editing needs the Supabase backend.",
     );
     this.name = "ReadOnlyStoreError";
   }
 }
 
-/** Read-only filesystem, or no permission to write to it. */
+/**
+ * Whether this filesystem simply will not take the write.
+ *
+ * `EROFS` and the two permission codes are the textbook answers. `ENOENT` is
+ * here because of what Vercel actually returns: `mkdir '/var/task/data'` fails
+ * with ENOENT rather than EROFS, and since `writeAtomically` creates the
+ * directory itself immediately beforehand, a missing path at this point can
+ * only mean the directory could not be made to exist. Reading that as anything
+ * other than "unwritable host" cost a production sign-in — the classifier said
+ * "not read-only", so the raw error escaped and became a 500.
+ */
 function isReadOnlyError(error: unknown): boolean {
   const code = (error as NodeJS.ErrnoException).code;
-  return code === "EROFS" || code === "EACCES" || code === "EPERM";
+  return code === "EROFS" || code === "EACCES" || code === "EPERM" || code === "ENOENT";
 }
 
 async function writeAtomically<T>(collection: string, value: T): Promise<void> {
