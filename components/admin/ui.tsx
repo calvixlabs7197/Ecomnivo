@@ -189,7 +189,7 @@ export function DataTable({
   minWidth?: string;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="scroll-hint overflow-x-auto">
       <table className="w-full text-left text-sm" style={{ minWidth }}>
         <thead>
           <tr className="border-b border-rule bg-surface/60">{head}</tr>

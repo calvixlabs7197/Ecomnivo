@@ -43,7 +43,9 @@ export function Hero({
             className="stagger flex flex-col items-center"
             style={{ "--stagger": "90ms" } as CSSProperties}
           >
-            <p className="animate-fade-up animate-delay inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-tint px-3.5 py-1.5 text-sm font-medium text-brand-hover">
+            {/* text-xs below `sm` keeps this on one line at 320px, where
+                wrapping leaves the icon stranded beside a two-line label. */}
+            <p className="animate-fade-up animate-delay inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-tint px-3 py-1.5 text-xs font-medium text-brand-hover sm:px-3.5 sm:text-sm">
               <Sparkles aria-hidden="true" className="size-3.5" />
               {toolCount} free calculators for online sellers
             </p>

@@ -358,9 +358,15 @@
   /*
    * The soft brand wash behind a hero or a panel heading.
    * A gradient at 6% is a suggestion of colour, not a colour.
+   *
+   * **The caller supplies the positioning.** This deliberately does not set
+   * `position`, because a custom utility and a Tailwind one have the same
+   * specificity and this file is emitted last — so `.aurora` silently beat
+   * `fixed` on the mobile nav panel and dropped it into normal flow at the end
+   * of the document. Pair it with `relative` (or any other positioned
+   * utility); `overflow: clip` stays, so do not put it on a scrolling element.
    */
   .aurora {
-    position: relative;
     isolation: isolate;
     overflow: clip;
   }
@@ -416,6 +422,27 @@
     to {
       box-shadow: var(--shadow-md);
     }
+  }
+
+  /*
+   * Shadows at the edges of a horizontally scrollable region, shown only while
+   * there is more to scroll to.
+   *
+   * Four backgrounds: two page-coloured covers attached `local` (they scroll
+   * with the content and hide the shadow when you reach an end) over two
+   * fixed radial shadows. No JavaScript, no scroll handler — and on a phone it
+   * is the only thing telling you a wide table continues past the screen edge.
+   */
+  .scroll-hint {
+    background:
+      linear-gradient(to right, var(--color-page) 30%, transparent) left center / 2.5rem 100%
+        no-repeat local,
+      linear-gradient(to left, var(--color-page) 30%, transparent) right center / 2.5rem 100%
+        no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgb(17 24 39 / 0.16), transparent) left center /
+        0.9rem 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgb(17 24 39 / 0.16), transparent) right center /
+        0.9rem 100% no-repeat scroll;
   }
 
   /* A one-pixel highlight along the top edge, the way real materials catch light. */

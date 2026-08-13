@@ -75,8 +75,10 @@ export function FilterBar({
     Boolean(urlQuery) || selects.some((select) => Boolean(searchParams.get(select.name)));
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-rule px-5 py-3">
-      <div className="relative min-w-0 flex-1 sm:max-w-xs">
+    <div className="flex flex-wrap items-center gap-3 border-b border-rule px-4 py-3 sm:px-5">
+      {/* Full width on its own row below `sm`: sharing a row with two selects
+          squeezed the search box to about seventy pixels on a phone. */}
+      <div className="relative w-full sm:w-auto sm:min-w-0 sm:max-w-xs sm:flex-1">
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
@@ -95,7 +97,7 @@ export function FilterBar({
       </div>
 
       {selects.map((select) => (
-        <div key={select.name} className="flex items-center gap-2">
+        <div key={select.name} className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
           <label htmlFor={`admin-filter-${select.name}`} className="sr-only">
             {select.label}
           </label>
@@ -103,7 +105,7 @@ export function FilterBar({
             id={`admin-filter-${select.name}`}
             value={searchParams.get(select.name) ?? ""}
             onChange={(event) => setParam(select.name, event.target.value)}
-            className="h-9 rounded-md border border-rule-strong bg-page px-2 text-sm text-ink transition-colors duration-150 ease-soft hover:border-muted"
+            className="h-9 w-full min-w-0 rounded-md border border-rule-strong bg-page px-2 text-sm text-ink transition-colors duration-150 ease-soft hover:border-muted sm:w-auto"
           >
             <option value="">{select.label}: all</option>
             {select.options.map((option) => (

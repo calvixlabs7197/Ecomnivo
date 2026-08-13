@@ -1361,6 +1361,21 @@ The admin renders a full application shell, and the root layout was stacking the
 
 The hero counts are read from the store rather than written into the copy, because a hero that advertises "50+ tools" it does not have is a line somebody has to maintain by hand and eventually lies.
 
+### The header, and two CSS traps it sprang
+
+The header became pill navigation with a tinted active state, a search control that looks like a control rather than a lone icon, and a translucent blurred surface — which reverses the original "solid, because `backdrop-filter` repaints every scroll frame" decision. The cost is real but bounded to one 68px strip, and it is what lets the hero's wash read as a continuous surface instead of stopping dead at a white bar. `supports-[backdrop-filter]` keeps the fallback opaque.
+
+Both traps were found by screenshotting, not by reading the diff:
+
+- **A filtered element is a containing block for its `fixed` descendants.** Adding the blur silently re-anchored the mobile nav panel to the header, so it rendered clipped inside a 68px strip. The panel is now portalled to `document.body`, which is what makes `fixed` mean the viewport again.
+- **A custom utility and a Tailwind utility have the same specificity, and this stylesheet is emitted last.** `.aurora` set `position: relative`, so it beat `fixed` on that same panel and dropped it into normal flow at the end of the document; its `overflow: clip` would equally have beaten `overflow-y-auto`. `.aurora` no longer sets `position` — callers pair it with `relative` — and it is documented as unsafe on a scrolling element.
+
+### Responsive
+
+Checked by rendering at 320, 390, 768 and 1440 rather than by trusting the breakpoints. What that turned up: the hero's eyebrow pill wrapped at 320 and left its icon stranded (now `text-xs` below `sm`), and the admin filter bar squeezed its search box to about seventy pixels on a phone (search now takes its own row below `sm`, with the selects sharing the next one).
+
+Wide admin tables still scroll horizontally on a phone. They now carry CSS-only edge shadows — page-coloured covers attached `local` over fixed radial shadows — so the shadow appears only while there is more to scroll to, and disappears entirely on a desktop where the table fits. Turning those tables into stacked cards on small screens is the better answer and is not done.
+
 ---
 
 ## Appendix A — Verified formulas
