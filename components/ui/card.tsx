@@ -19,9 +19,9 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-lg border border-rule bg-page",
+        "rounded-xl border border-rule/90 bg-page shadow-[0_1px_2px_rgb(15_23_42/0.03)]",
         interactive &&
-          "transition-colors duration-150 ease-soft hover:border-rule-strong hover:bg-surface",
+          "transition-colors duration-150 ease-soft hover:border-brand/20 hover:bg-white",
         className,
       )}
     >

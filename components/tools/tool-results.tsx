@@ -33,7 +33,7 @@ export function ToolResults({
   const rest = results.filter((result) => result.emphasis !== "primary");
 
   return (
-    <div className="overflow-hidden rounded-lg border border-rule bg-gradient-to-b from-brand-tint/60 to-surface p-5 sm:p-6">
+    <div className="overflow-hidden rounded-xl border border-brand/10 bg-gradient-to-br from-brand-tint via-white to-surface p-5 shadow-inner sm:p-6">
       <h3 className="text-eyebrow uppercase text-muted">Results</h3>
 
       <div className="mt-4 flex flex-col gap-5">

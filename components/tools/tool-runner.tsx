@@ -146,7 +146,7 @@ function Runner({
   }
 
   return (
-    <section aria-labelledby="calculator-heading" className="rounded-lg border border-rule p-5 sm:p-6">
+    <section aria-labelledby="calculator-heading" className="rounded-2xl border border-rule bg-white/80 p-4 shadow-[0_20px_60px_-32px_rgb(15_23_42/0.28)] backdrop-blur sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-rule pb-4">
         <h2 id="calculator-heading" className="text-h3">
           Calculator

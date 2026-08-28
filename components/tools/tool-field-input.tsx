@@ -66,7 +66,7 @@ export function ToolFieldInput({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={cn(
-            "h-11 w-full rounded-md border bg-page px-3 text-base tabular-nums text-ink transition-colors duration-150 ease-soft placeholder:text-muted",
+            "h-12 w-full rounded-xl border bg-page px-3 text-base tabular-nums text-ink shadow-sm transition duration-200 ease-soft placeholder:text-muted focus:border-brand focus:bg-white focus:shadow-[0_0_0_4px_rgb(79_70_229/0.1)] focus:outline-none",
             prefix && (prefix.length > 1 ? "pl-12" : "pl-8"),
             suffix && "pr-8",
             error ? "border-critical" : "border-rule-strong hover:border-muted",

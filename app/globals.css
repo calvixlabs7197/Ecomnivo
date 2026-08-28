@@ -18,22 +18,22 @@
 
 @theme {
   /* --- surfaces --------------------------------------------------------- */
-  --color-page: #ffffff;
-  --color-surface: #f9fafb;
-  --color-surface-strong: #f3f4f6;
+  --color-page: #fbfcff;
+  --color-surface: #f5f7fb;
+  --color-surface-strong: #edf1f7;
 
   /* --- text ------------------------------------------------------------- */
-  --color-ink: #111827;
-  --color-muted: #6b7280;
+  --color-ink: #0b1220;
+  --color-muted: #627087;
 
   /* --- lines ------------------------------------------------------------ */
-  --color-rule: #e5e7eb;
-  --color-rule-strong: #d1d5db;
+  --color-rule: #e2e7ef;
+  --color-rule-strong: #cbd3df;
 
   /* --- brand ------------------------------------------------------------ */
-  --color-brand: #2563eb;
-  --color-brand-hover: #1d4ed8;
-  --color-brand-tint: #eff6ff;
+  --color-brand: #4f46e5;
+  --color-brand-hover: #4338ca;
+  --color-brand-tint: #eef2ff;
 
   /* --- category accents -------------------------------------------------- */
   /*
@@ -109,15 +109,15 @@
 
   /* --- shape ------------------------------------------------------------ */
   --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
 
   --shadow-sm: 0 1px 2px 0 rgb(17 24 39 / 0.05);
   --shadow-md: 0 4px 12px -2px rgb(17 24 39 / 0.08);
   /* Reserved for something that is genuinely lifting off the page: a card
      under the cursor, the mobile drawer. Not a resting state. */
-  --shadow-lg: 0 16px 36px -12px rgb(17 24 39 / 0.16);
-  --shadow-brand: 0 10px 24px -10px rgb(37 99 235 / 0.55);
+  --shadow-lg: 0 22px 50px -18px rgb(15 23 42 / 0.24);
+  --shadow-brand: 0 14px 30px -12px rgb(79 70 229 / 0.6);
 
   /* --- layout ----------------------------------------------------------- */
   --container-page: 75rem; /* 1200px — max-w-page */
@@ -346,7 +346,7 @@
   }
 
   .lift:hover {
-    transform: translateY(-3px);
+    transform: translateY(-6px);
     box-shadow: var(--shadow-lg);
   }
 
@@ -378,8 +378,8 @@
     height: 34rem;
     z-index: -1;
     background:
-      radial-gradient(38rem 22rem at 22% 30%, rgb(37 99 235 / 0.1), transparent 65%),
-      radial-gradient(34rem 20rem at 78% 20%, rgb(124 58 237 / 0.08), transparent 62%);
+      radial-gradient(38rem 22rem at 18% 25%, rgb(79 70 229 / 0.16), transparent 65%),
+      radial-gradient(36rem 24rem at 82% 18%, rgb(14 165 233 / 0.12), transparent 62%);
     animation: var(--animate-float);
     pointer-events: none;
   }
@@ -471,6 +471,35 @@
     opacity: 1;
   }
 
+  .text-gradient {
+    background: linear-gradient(120deg, var(--color-brand) 5%, #7c3aed 55%, #0284c7 100%);
+    background-clip: text;
+    color: transparent;
+    -webkit-background-clip: text;
+  }
+
+  .premium-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgb(255 255 255 / 0.7), transparent 32%);
+  }
+
+  .hero-orbit { animation: orbit-pulse 5s ease-in-out infinite; }
+  .chart-bar { animation: grow-up 0.8s var(--ease-soft) both; }
+  .floating-chip { animation: float-chip 4s ease-in-out infinite; }
+
+  @keyframes orbit-pulse {
+    0%, 100% { transform: scale(0.985) rotate(-1deg); opacity: 0.55; }
+    50% { transform: scale(1.015) rotate(1deg); opacity: 1; }
+  }
+
+  @keyframes float-chip {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
   /*
    * Reduced motion.
    *
@@ -489,6 +518,12 @@
     }
 
     .aurora::before {
+      animation: none !important;
+    }
+
+    .hero-orbit,
+    .chart-bar,
+    .floating-chip {
       animation: none !important;
     }
 

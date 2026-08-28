@@ -23,8 +23,8 @@ export function Section({
       id={id}
       aria-labelledby={labelledBy}
       className={cn(
-        "py-16 sm:py-20 lg:py-24",
-        tone === "surface" && "border-y border-rule bg-surface",
+        "py-14 sm:py-20 lg:py-24",
+        tone === "surface" && "border-y border-rule bg-gradient-to-b from-surface to-page",
         className,
       )}
     >
