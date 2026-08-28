@@ -128,6 +128,9 @@ export default async function ToolPage({ params }: PageProps<"/tools/[slug]">) {
                   {category.name}
                 </span>
               ) : null}
+              <span className="inline-flex items-center rounded-full border border-brand/15 bg-brand-tint px-2.5 py-1 text-xs font-medium text-brand">
+                US seller focused · USD default
+              </span>
             </div>
             <h1 className="animate-fade-up animate-delay mt-3 text-h1">{content.h1}</h1>
             <p className="animate-fade-up animate-delay mt-4 text-lead leading-relaxed text-muted">

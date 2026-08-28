@@ -10,9 +10,9 @@ import { PageHero } from "@/components/layout/page-hero";
 import { ToolGrid } from "@/components/tools/tool-grid";
 import { JsonLd } from "@/components/seo/json-ld";
 
-const title = "All E-commerce Calculators and Tools";
+const title = "Free Ecommerce Calculators for US Sellers";
 const description =
-  "Every EcomNivo calculator in one place: profitability, advertising, pricing and growth tools for online sellers. Free, no signup.";
+  "USD-first ecommerce calculators for US sellers: profit, ROAS, advertising, pricing, fees and growth tools. Free to use with no signup.";
 
 export const metadata: Metadata = buildMetadata({
   title,
@@ -41,7 +41,7 @@ export default async function ToolsPage() {
       <PageHero
         crumbs={crumbs}
         title={title}
-        lead={`${liveCount} calculators covering the numbers that decide whether an online store makes money. Each one shows its formula and a worked example, so you can check the maths rather than trust it.`}
+        lead={`${liveCount} USD-first calculators for US online sellers, covering the numbers that decide whether a store makes money. Each one shows its formula and a worked example, so you can verify the math.`}
       >
         {liveCount === 0 ? (
           <p className="leading-relaxed text-muted">

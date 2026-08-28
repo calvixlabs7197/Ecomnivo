@@ -55,7 +55,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     settings.ga4MeasurementId ?? env.NEXT_PUBLIC_GA4_MEASUREMENT_ID ?? null;
 
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang={siteConfig.language} className={`${inter.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-page text-ink">
         <a href="#main" className="skip-link rounded-md bg-brand px-4 py-2 text-white">
           Skip to content

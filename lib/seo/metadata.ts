@@ -57,7 +57,13 @@ export function buildMetadata({
   return {
     title: absoluteTitle ? { absolute: title } : title,
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      languages: {
+        [siteConfig.language]: url,
+        "x-default": url,
+      },
+    },
     robots: noindex
       ? { index: false, follow: true }
       : {

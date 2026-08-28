@@ -48,7 +48,7 @@ export function Hero({
                 wrapping leaves the icon stranded beside a two-line label. */}
             <p className="animate-fade-up animate-delay inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-tint px-3 py-1.5 text-xs font-medium text-brand-hover sm:px-3.5 sm:text-sm">
               <Sparkles aria-hidden="true" className="size-3.5" />
-              {toolCount} free calculators for online sellers
+              {toolCount} free calculators for US online sellers
             </p>
 
             <h1 className="animate-fade-up animate-delay mt-6 max-w-2xl text-[clamp(2.6rem,8vw,4.75rem)] font-bold leading-[0.98] tracking-[-0.055em] text-ink">

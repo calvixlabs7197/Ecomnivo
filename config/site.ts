@@ -9,11 +9,14 @@ import { env } from "@/config/env";
  */
 export const siteConfig = {
   name: "EcomNivo",
-  tagline: "Smart Tools for Smarter E-commerce",
+  tagline: "Free Ecommerce Calculators for US Sellers",
   description:
-    "Free calculators and tools to help you understand profitability, advertising performance, pricing, fees, and growth.",
+    "Free USD-first ecommerce calculators for US online sellers. Calculate profit, ROAS, pricing, ad costs, fees, margins, and growth with no signup.",
   url: env.SITE_URL,
   locale: "en_US",
+  language: "en-US",
+  market: "US",
+  marketName: "United States",
   /**
    * Deliberately empty. Social profiles get added here (and to the
    * Organization `sameAs`) when the accounts actually exist — inventing URLs

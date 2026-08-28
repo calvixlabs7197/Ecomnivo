@@ -17,6 +17,10 @@ export function organizationSchema(): JsonLdObject {
     name: siteConfig.name,
     url: absoluteUrl("/"),
     description: siteConfig.description,
+    areaServed: {
+      "@type": "Country",
+      name: siteConfig.marketName,
+    },
     ...(siteConfig.socials.length > 0
       ? { sameAs: siteConfig.socials.map((social) => social.href) }
       : {}),
@@ -39,7 +43,14 @@ export function websiteSchema(): JsonLdObject {
     url: absoluteUrl("/"),
     description: siteConfig.description,
     publisher: { "@id": `${siteConfig.url}/#organization` },
-    inLanguage: "en",
+    inLanguage: siteConfig.language,
+    audience: {
+      "@type": "BusinessAudience",
+      geographicArea: {
+        "@type": "Country",
+        name: siteConfig.marketName,
+      },
+    },
     potentialAction: {
       "@type": "SearchAction",
       target: {
@@ -123,6 +134,8 @@ export function webApplicationSchema({
     applicationCategory: "BusinessApplication",
     operatingSystem: "Any",
     browserRequirements: "Requires JavaScript",
+    inLanguage: siteConfig.language,
+    countriesSupported: siteConfig.market,
     isAccessibleForFree: true,
     offers: {
       "@type": "Offer",
@@ -168,7 +181,7 @@ export function articleSchema({
     author: { "@type": "Organization", name: authorName },
     publisher: { "@id": `${siteConfig.url}/#organization` },
     isPartOf: { "@id": `${siteConfig.url}/#website` },
-    inLanguage: "en",
+    inLanguage: siteConfig.language,
   };
 }
 
@@ -188,6 +201,14 @@ export function collectionPageSchema({
     name,
     description,
     url: absoluteUrl(path),
+    inLanguage: siteConfig.language,
+    audience: {
+      "@type": "BusinessAudience",
+      geographicArea: {
+        "@type": "Country",
+        name: siteConfig.marketName,
+      },
+    },
     isPartOf: { "@id": `${siteConfig.url}/#website` },
   };
 }
