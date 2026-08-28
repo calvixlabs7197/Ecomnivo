@@ -2,7 +2,7 @@
 
 import type { CurrencyCode } from "@/config/currencies";
 import { formatResult } from "@/lib/tools/format";
-import type { ToolResult } from "@/lib/tools/types";
+import type { ResultFormat, ToolResult } from "@/lib/tools/types";
 import { cn } from "@/lib/utils";
 
 const toneClass = {
@@ -21,26 +21,50 @@ const toneClass = {
  */
 export function ToolResults({
   results,
+  baselineResults,
   currency,
   ready,
 }: {
   results: ToolResult[];
+  baselineResults?: ToolResult[] | null;
   currency: CurrencyCode;
   /** False while a required field is still empty. */
   ready: boolean;
 }) {
   const primary = results.filter((result) => result.emphasis === "primary");
   const rest = results.filter((result) => result.emphasis !== "primary");
+  const baselineByKey = new Map(baselineResults?.map((result) => [result.key, result]));
+
+  function formatDelta(value: number, format: ResultFormat): string {
+    const formatted =
+      format === "percent"
+        ? `${Math.abs(value).toFixed(Math.abs(value) < 1 ? 2 : 1)} pp`
+        : formatResult(Math.abs(value), format, currency);
+    if (value === 0) return `No change (${formatted})`;
+    return `${value > 0 ? "+" : "−"}${formatted}`;
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-brand/10 bg-gradient-to-br from-brand-tint via-white to-surface p-5 shadow-inner sm:p-6">
-      <h3 className="text-eyebrow uppercase text-muted">Results</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-eyebrow uppercase text-muted">Results</h3>
+        {baselineResults ? (
+          <span className="rounded-full border border-brand/15 bg-white/70 px-2.5 py-1 text-xs font-semibold text-brand">
+            Comparing scenario
+          </span>
+        ) : null}
+      </div>
 
       <div className="mt-4 flex flex-col gap-5">
         {primary.map((result) => {
           const formatted = ready
             ? formatResult(result.value, result.format, currency)
             : "—";
+          const baseline = baselineByKey.get(result.key);
+          const delta =
+            ready && result.value !== null && baseline?.value != null
+              ? result.value - baseline.value
+              : null;
 
           return (
             <div key={result.key}>
@@ -65,6 +89,16 @@ export function ToolResults({
               </p>
               {ready && result.note ? (
                 <p className="mt-1.5 max-w-prose text-sm text-muted">{result.note}</p>
+              ) : null}
+              {delta !== null ? (
+                <p
+                  className={cn(
+                    "mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums",
+                    delta === 0 ? "bg-surface-strong text-muted" : "bg-brand/10 text-brand",
+                  )}
+                >
+                  {formatDelta(delta, result.format)} vs saved
+                </p>
               ) : null}
             </div>
           );

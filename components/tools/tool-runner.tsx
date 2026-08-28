@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, RotateCcw } from "lucide-react";
+import { BookmarkPlus, Check, Copy, RotateCcw, X } from "lucide-react";
 
 import { getToolEngine } from "@/lib/tools/engines";
 import { evaluateForm } from "@/lib/tools/validate";
@@ -59,6 +59,9 @@ function Runner({
   const defaults = useMemo(() => initialValues(engine), [engine]);
   const [values, setValues] = useState<Record<string, string>>(defaults);
   const [copied, setCopied] = useState(false);
+  const [baselineResults, setBaselineResults] = useState<ReturnType<typeof engine.compute> | null>(
+    null,
+  );
   const [announcement, setAnnouncement] = useState("");
   /**
    * Whether the visitor has edited anything.
@@ -146,72 +149,132 @@ function Runner({
   }
 
   return (
-    <section aria-labelledby="calculator-heading" className="rounded-2xl border border-rule bg-white/80 p-4 shadow-[0_20px_60px_-32px_rgb(15_23_42/0.28)] backdrop-blur sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-rule pb-4">
-        <h2 id="calculator-heading" className="text-h3">
-          Calculator
-        </h2>
-        <CurrencySelect
-          value={currency}
-          onChange={(next) => {
-            setCurrency(next);
-            track("currency_change", { currency: next });
-          }}
-        />
-      </div>
+    <section
+      aria-labelledby="calculator-heading"
+      className="overflow-hidden rounded-2xl border border-rule bg-white/80 shadow-[0_20px_60px_-32px_rgb(15_23_42/0.28)] backdrop-blur"
+    >
+      <div className="h-1 bg-gradient-to-r from-brand via-violet-500 to-sky-500" />
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-rule pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 id="calculator-heading" className="text-h3">
+                Calculator
+              </h2>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-positive/10 px-2.5 py-1 text-xs font-semibold text-positive">
+                <span className="size-1.5 rounded-full bg-positive" />
+                Live
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted">
+              Edit any value and your results update instantly.
+            </p>
+          </div>
+          <CurrencySelect
+            value={currency}
+            onChange={(next) => {
+              setCurrency(next);
+              track("currency_change", { currency: next });
+            }}
+          />
+        </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-5 lg:gap-8">
-        <div className="flex flex-col gap-5 lg:col-span-3">
-          <div className="grid gap-5 sm:grid-cols-2">
-            {engine.fields.map((field) => (
-              <ToolFieldInput
-                key={field.name}
-                field={field}
-                value={values[field.name] ?? ""}
-                error={errors[field.name]}
-                currency={currency}
-                onChange={(next) => {
-                  setTouched(true);
-                  setValues((current) => ({ ...current, [field.name]: next }));
+        <div className="mt-6 grid gap-6 lg:grid-cols-5 lg:gap-8">
+          <div className="flex flex-col gap-5 lg:col-span-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">
+                1
+              </span>
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Enter your numbers</h3>
+                <p className="text-xs text-muted">Use figures from the same reporting period.</p>
+              </div>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {engine.fields.map((field) => (
+                <ToolFieldInput
+                  key={field.name}
+                  field={field}
+                  value={values[field.name] ?? ""}
+                  error={errors[field.name]}
+                  currency={currency}
+                  onChange={(next) => {
+                    setTouched(true);
+                    setValues((current) => ({ ...current, [field.name]: next }));
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setValues(defaults);
+                  setTouched(false);
+                  setBaselineResults(null);
+                  track("tool_reset", { tool_slug: engine.slug });
                 }}
+              >
+                <RotateCcw aria-hidden="true" className="size-4" />
+                Reset
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleCopy} disabled={!ready}>
+                {copied ? (
+                  <Check aria-hidden="true" className="size-4 text-positive" />
+                ) : (
+                  <Copy aria-hidden="true" className="size-4" />
+                )}
+                {copied ? "Copied" : "Copy results"}
+              </Button>
+              <Button
+                variant={baselineResults ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => setBaselineResults(results.map((result) => ({ ...result })))}
+                disabled={!ready}
+              >
+                <BookmarkPlus aria-hidden="true" className="size-4" />
+                {baselineResults ? "Update saved scenario" : "Save scenario"}
+              </Button>
+              {baselineResults ? (
+                <Button variant="ghost" size="sm" onClick={() => setBaselineResults(null)}>
+                  <X aria-hidden="true" className="size-4" />
+                  Clear comparison
+                </Button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="lg:sticky lg:top-24">
+              <div className="mb-3 flex items-center gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">
+                  2
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold text-ink">Review your results</h3>
+                  <p className="text-xs text-muted">
+                    {baselineResults
+                      ? "Changes are measured against your saved scenario."
+                      : "Save a scenario to compare different outcomes."}
+                  </p>
+                </div>
+              </div>
+              <ToolResults
+                results={results}
+                baselineResults={baselineResults}
+                currency={currency}
+                ready={ready}
               />
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setValues(defaults);
-                setTouched(false);
-                track("tool_reset", { tool_slug: engine.slug });
-              }}
-            >
-              <RotateCcw aria-hidden="true" className="size-4" />
-              Reset
-            </Button>
-            <Button variant="secondary" size="sm" onClick={handleCopy} disabled={!ready}>
-              {copied ? (
-                <Check aria-hidden="true" className="size-4 text-positive" />
-              ) : (
-                <Copy aria-hidden="true" className="size-4" />
-              )}
-              {copied ? "Copied" : "Copy results"}
-            </Button>
+            </div>
           </div>
         </div>
 
-        <div className="lg:col-span-2">
-          <div className="lg:sticky lg:top-24">
-            <ToolResults results={results} currency={currency} ready={ready} />
-          </div>
-        </div>
+        <p role="status" aria-live="polite" className="sr-only">
+          {announcement}
+        </p>
       </div>
-
-      <p role="status" aria-live="polite" className="sr-only">
-        {announcement}
-      </p>
     </section>
   );
 }
